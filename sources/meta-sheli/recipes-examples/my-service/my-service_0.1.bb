@@ -8,6 +8,13 @@ SRC_URI = "file://skeleton \
 	   file://COPYRIGHT \
 	   "
 
+INITSCRIPT_NAME = "skeleton"
+INITSCRIPT_PARAMS = "start 09 S ."
+
+inherit update-rc.d
+
+S = "${WORKDIR}"
+
 do_compile () {
 	${CC} ${CFLAGS} ${LDFLAGS} ${WORKDIR}/skeleton_test.c -o ${WORKDIR}/skeleton-test
 }
