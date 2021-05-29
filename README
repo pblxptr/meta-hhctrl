@@ -1,0 +1,3 @@
+### v.1.0.0 
+- Added custom image (built on top of base image)
+- Configuration of distribution has been split into two configuration files, dev and integration

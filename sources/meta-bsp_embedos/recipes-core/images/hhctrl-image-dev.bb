@@ -11,4 +11,5 @@ IMAGE_INSTALL = "\
 IMAGE_FEATURES_append = " \
   ssh-server-dropbear \
   debug-tweaks \
+  nfs-client \
 "
