@@ -51,6 +51,10 @@ dev_t dev = 0;
 static struct class* dev_class;
 static struct cdev hatch2sr_cdev;
 
+struct pwm_hatch_engine {
+	struct pwm_device* pwm;
+	
+};
 
 /*
 ** This function is called when somebody has called open driver file.
