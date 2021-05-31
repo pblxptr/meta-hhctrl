@@ -1,3 +1,9 @@
 build
 img-backup
 tmp-src
+.vscode
+.ko.cmd
+.mod.cmd
+.mod.o.cmd
+.o.cmd.
+.cmd
