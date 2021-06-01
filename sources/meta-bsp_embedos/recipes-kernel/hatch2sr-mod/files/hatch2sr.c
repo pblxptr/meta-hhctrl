@@ -17,17 +17,19 @@
  *
  *****************************************************************************/
 
-#include <linux/kernel.h>
+#include <linux/input.h>
 #include <linux/module.h>
-#include <linux/init.h>
-#include <linux/fs.h>
-#include <linux/kdev_t.h>
-#include <linux/device.h>
-#include <linux/cdev.h>
+#include <linux/kernel.h>
+#include <linux/of.h>
+#include <linux/platform_device.h>
 #include <linux/pwm.h>
+#include <linux/slab.h>
+#include <linux/miscdevice.h>
+#include <linux/uaccess.h>
 
 #define BASE_MINOR 0
 #define DEV_COUNT  1
+#define ENGINE_PWM 0
 
 /*
 **	Function prototypes
@@ -47,21 +49,29 @@ static struct file_operations fops = {
 	.write = 		hatch2sr_write
 };
 
+struct miscdevice hatch2srmisc = {
+	.name	= "hatch2sr",
+	.minor	= MISC_DYNAMIC_MINOR,
+	.fops	= &fops,
+};
+ 
+
 dev_t dev = 0;
 static struct class* dev_class;
-static struct cdev hatch2sr_cdev;
 
-struct pwm_hatch_engine {
+struct hatch_pwm_engine {
 	struct pwm_device* pwm;
-	
+	unsigned long period;
 };
+
+struct hatch_pwm_engine* pwm_engine;
 
 /*
 ** This function is called when somebody has called open driver file.
 */
 static int	hatch2sr_open(struct inode* inode, struct file* file)
 {
-	pr_info("%s\n", __FUNCTION__);
+	printk("%s\n", __FUNCTION__);
 
 	return 0;
 }
@@ -71,7 +81,7 @@ static int	hatch2sr_open(struct inode* inode, struct file* file)
 */
 static int hatch2sr_release(struct inode* inode, struct file* file)
 {
-	pr_info("%s\n", __FUNCTION__);
+	printk("%s\n", __FUNCTION__);
 
 	return 0;
 }
@@ -81,7 +91,7 @@ static int hatch2sr_release(struct inode* inode, struct file* file)
 */
 static ssize_t hatch2sr_read(struct file* file, char __user* buf, size_t len, loff_t* off)
 {
-	pr_info("%s\n", __FUNCTION__);
+	printk("%s\n", __FUNCTION__);
 
 	return 0;
 }
@@ -91,77 +101,101 @@ static ssize_t hatch2sr_read(struct file* file, char __user* buf, size_t len, lo
 */
 static ssize_t hatch2sr_write(struct file* file, const char __user* buf, size_t len, loff_t* off)
 {
-	pr_info("%s\n", __FUNCTION__);
+	printk("%s\n", __FUNCTION__);
 
 	return len;
 }
 
-/*
-** Module init function
-*/
-int static __init hatch2sr_driver_init(void)
+static int hatch2sr_driver_probe(struct platform_device *pdev)
 {
-	pr_info("%s\n", __FUNCTION__);
+	printk("%s\n", __FUNCTION__);
 
-	if (alloc_chrdev_region(&dev, BASE_MINOR, DEV_COUNT, "hatch2sr") < 0) {
-		pr_info("Cannot allocate major number for device.\n");
+  struct device* dev = &pdev->dev;
 
-		return -1;
-	}
-
-	/* Initializing cdev structutre */
-	cdev_init(&hatch2sr_cdev, &fops);
+	int error;
 	
-	/* Adding character device to the system */
-	if (cdev_add(&hatch2sr_cdev, dev, DEV_COUNT) < 0) {
-		pr_err("Cannot add the cdev to the system.\n");
+	pwm_engine = kzalloc(sizeof(struct hatch_pwm_engine), GFP_KERNEL);
 
-		goto r_class_fail;
+	if (!pwm_engine) {
+		return -ENOMEM;
 	}
+   
+	pwm_engine->pwm = pwm_get(dev, NULL); //Apply for pwm device
 
-	/* Creating class */
-	if ((dev_class = class_create(THIS_MODULE, "hatch2sr_class")) == NULL) {
-		pr_err("Cannot create the struct class for device.\n");
+	if (IS_ERR(pwm_engine->pwm)) {
+		error = PTR_ERR(pwm_engine->pwm);
+
+		if (error != -EPROBE_DEFER) {
+			dev_err(dev, "Failed to request PWM device: %d\n", error);
+		}
 		
-		goto r_class_fail;
+		return error;
 	}
 
-	/* Creating device */
-	if (device_create(dev_class, NULL, dev, NULL, "hatch2sr_device") == NULL) {
-		pr_err("Cannot create the device.\n");
+	misc_register(&hatch2srmisc);
 
-		goto r_device_fail;
-	}
-
-	pr_info("Major: %d, Minor: %d", MAJOR(dev), MINOR(dev));
-	pr_info("Kernel Module inserted successfully...\n");
+ 	return 0;
+}
+ 
+static int hatch2sr_driver_remove(struct platform_device *pdev)
+{
+	printk("%s\n", __FUNCTION__);
 
 	return 0;
-
-	r_device_fail:
-		class_destroy(dev_class);
-	r_class_fail:
-		unregister_chrdev_region(dev, DEV_COUNT);
-		return -1;
 }
 
-/*
-** Module exit function
-*/
-static void __exit hatch2sr_driver_exit(void)
+static int __maybe_unused hatch2sr_suspend(struct device *dev)
 {
-	pr_info("%s\n", __FUNCTION__);
-
-	device_destroy(dev_class, dev);
-	class_destroy(dev_class);
-	cdev_del(&hatch2sr_cdev);
-	unregister_chrdev_region(dev, DEV_COUNT);
-	pr_info("Kernel Module removed successfully...\n");
-
+	printk("%s\n", __FUNCTION__);
+	
+	struct hatch_pwm_engine* pwm_engine = dev_get_drvdata(dev);
+ 
+	if (pwm_engine->period)
+		pwm_disable(pwm_engine->pwm);
+ 
+	return 0;
 }
 
-module_init(hatch2sr_driver_init);
-module_exit(hatch2sr_driver_exit);
+static int __maybe_unused hatch2sr_resume(struct device *dev)
+{
+	printk("%s\n", __FUNCTION__);	
+
+	struct hatch_pwm_engine* pwm_engine = dev_get_drvdata(dev);
+ 
+	if (pwm_engine->period) {
+		pwm_config(pwm_engine->pwm, pwm_engine->period / 2, pwm_engine->period);
+		pwm_enable(pwm_engine->pwm);
+	}
+ 
+	return 0;
+}
+
+static SIMPLE_DEV_PM_OPS(hatch2sr_pm_ops,
+			 hatch2sr_suspend, 
+			 hatch2sr_resume
+);
+
+#ifdef CONFIG_OF
+static const struct of_device_id hatch2sr_match[] = {
+	{ .compatible = "hatch2sr", },
+	{ },
+};
+
+MODULE_DEVICE_TABLE(of, hatch2sr_match);
+#endif
+
+static struct platform_driver hatch2sr_driver = {
+	.probe	= hatch2sr_driver_probe,
+	.remove = hatch2sr_driver_remove,
+	.driver = {
+		.name	= "hatch2sr",
+		.owner = THIS_MODULE,
+		.pm	= &hatch2sr_pm_ops,
+		.of_match_table = of_match_ptr(hatch2sr_match),
+	},
+};
+
+module_platform_driver(hatch2sr_driver);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Patryk Biel");
