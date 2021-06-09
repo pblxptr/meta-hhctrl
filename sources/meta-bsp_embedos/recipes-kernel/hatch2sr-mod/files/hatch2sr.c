@@ -26,10 +26,17 @@
 #include <linux/slab.h>
 #include <linux/miscdevice.h>
 #include <linux/uaccess.h>
+#include <linux/device.h>
+#include <linux/gpio.h>
+#include <linux/err.h>
 
 #define BASE_MINOR 0
 #define DEV_COUNT  1
-#define ENGINE_PWM 0
+
+#define PWM_ENGINE_PERIOD_NS  		 (10000000)
+#define PWM_ENGINE_INITIAL_DUTY    (0)
+#define OPEN_POSITION_SENSOR_IDX   (0)
+#define CLOSED_POSITION_SENSOR_IDX (1)
 
 /*
 **	Function prototypes
@@ -57,14 +64,10 @@ struct miscdevice hatch2srmisc = {
  
 
 dev_t dev = 0;
-static struct class* dev_class;
+struct pwm_device* pwm_engine_dev;
+struct gpio_desc* open_position_sensor;
+struct gpio_desc* closed_position_sensor;
 
-struct hatch_pwm_engine {
-	struct pwm_device* pwm;
-	unsigned long period;
-};
-
-struct hatch_pwm_engine* pwm_engine;
 
 /*
 ** This function is called when somebody has called open driver file.
@@ -91,7 +94,17 @@ static int hatch2sr_release(struct inode* inode, struct file* file)
 */
 static ssize_t hatch2sr_read(struct file* file, char __user* buf, size_t len, loff_t* off)
 {
+	int closed_position_sensor_val;
+	int open_position_sensor_val;
+
+	closed_position_sensor_val = gpiod_get_value(closed_position_sensor);
+	open_position_sensor_val = gpiod_get_value(open_position_sensor);
+
 	printk("%s\n", __FUNCTION__);
+	printk("Sensor closed value: %d\n", closed_position_sensor_val);
+	printk("Sensor open value: %d\n", open_position_sensor_val);
+
+	gpiod_set_value(open_position_sensor, 1);
 
 	return 0;
 }
@@ -108,81 +121,53 @@ static ssize_t hatch2sr_write(struct file* file, const char __user* buf, size_t 
 
 static int hatch2sr_driver_probe(struct platform_device *pdev)
 {
+	struct device* dev = &pdev->dev;
+
 	printk("%s\n", __FUNCTION__);
-
-  struct device* dev = &pdev->dev;
-
-	int error;
 	
-	pwm_engine = kzalloc(sizeof(struct hatch_pwm_engine), GFP_KERNEL);
+	//Initialize pwm
+	pwm_engine_dev = pwm_get(dev, "motor1");
 
-	if (!pwm_engine) {
-		return -ENOMEM;
-	}
-   
-	pwm_engine->pwm = pwm_get(dev, NULL); //Apply for pwm device
-
-	if (IS_ERR(pwm_engine->pwm)) {
-		error = PTR_ERR(pwm_engine->pwm);
-
-		if (error != -EPROBE_DEFER) {
-			dev_err(dev, "Failed to request PWM device: %d\n", error);
-		}
-		
-		return error;
+	if (IS_ERR(pwm_engine_dev)) {
+		dev_err(dev, "Cannot initialize pwm dev.\n");
+		return -1;
 	}
 
-	misc_register(&hatch2srmisc);
+	//Initialize gpios for sensors
+	open_position_sensor = gpiod_get_index(dev, NULL, OPEN_POSITION_SENSOR_IDX, GPIOD_IN);
+	closed_position_sensor = gpiod_get_index(dev, NULL, CLOSED_POSITION_SENSOR_IDX, GPIOD_IN);
+
+	if (IS_ERR(open_position_sensor) || IS_ERR(closed_position_sensor)) {
+		dev_err(dev, "Cannot initialize gpios for sensors.\n");
+		return -1;
+	}
+
+	//Configure pwm && gpios  
+	pwm_config(pwm_engine_dev, PWM_ENGINE_INITIAL_DUTY, PWM_ENGINE_PERIOD_NS);
+	pwm_enable(pwm_engine_dev);
+
+	gpiod_export(open_position_sensor, false);
+	gpiod_export(closed_position_sensor, false);
 
  	return 0;
 }
- 
 static int hatch2sr_driver_remove(struct platform_device *pdev)
 {
 	printk("%s\n", __FUNCTION__);
 
+	pwm_put(pwm_engine_dev);
+	gpiod_put(open_position_sensor);
+	gpiod_put(closed_position_sensor);
+
 	return 0;
 }
 
-static int __maybe_unused hatch2sr_suspend(struct device *dev)
-{
-	printk("%s\n", __FUNCTION__);
-	
-	struct hatch_pwm_engine* pwm_engine = dev_get_drvdata(dev);
- 
-	if (pwm_engine->period)
-		pwm_disable(pwm_engine->pwm);
- 
-	return 0;
-}
-
-static int __maybe_unused hatch2sr_resume(struct device *dev)
-{
-	printk("%s\n", __FUNCTION__);	
-
-	struct hatch_pwm_engine* pwm_engine = dev_get_drvdata(dev);
- 
-	if (pwm_engine->period) {
-		pwm_config(pwm_engine->pwm, pwm_engine->period / 2, pwm_engine->period);
-		pwm_enable(pwm_engine->pwm);
-	}
- 
-	return 0;
-}
-
-static SIMPLE_DEV_PM_OPS(hatch2sr_pm_ops,
-			 hatch2sr_suspend, 
-			 hatch2sr_resume
-);
-
-#ifdef CONFIG_OF
 static const struct of_device_id hatch2sr_match[] = {
 	{ .compatible = "hatch2sr", },
 	{ },
 };
 
 MODULE_DEVICE_TABLE(of, hatch2sr_match);
-#endif
 
 static struct platform_driver hatch2sr_driver = {
 	.probe	= hatch2sr_driver_probe,
@@ -190,7 +175,6 @@ static struct platform_driver hatch2sr_driver = {
 	.driver = {
 		.name	= "hatch2sr",
 		.owner = THIS_MODULE,
-		.pm	= &hatch2sr_pm_ops,
 		.of_match_table = of_match_ptr(hatch2sr_match),
 	},
 };
