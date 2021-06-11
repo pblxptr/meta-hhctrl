@@ -29,17 +29,27 @@
 #include <linux/device.h>
 #include <linux/gpio.h>
 #include <linux/err.h>
+#include <linux/interrupt.h>
+
+#define EN_DEBOUNCE
+
+#ifdef EN_DEBOUNCE
+#include <linux/jiffies.h>
+extern unsigned long volatile jiffies;
+unsigned long old_jiffie = 0;
+#endif
 
 #define BASE_MINOR 0
 #define DEV_COUNT  1
 
-#define PWM_ENGINE_PERIOD_NS  		 (10000000)
-#define PWM_ENGINE_INITIAL_DUTY    (0)
-#define OPEN_POSITION_SENSOR_IDX   (0)
-#define CLOSED_POSITION_SENSOR_IDX (1)
+#define PWM_ENGINE_PERIOD_NS  		 			 (10000000)
+#define PWM_ENGINE_INITIAL_DUTY    			 (0)
+#define OPEN_POSITION_SENSOR_IDX   			 (0)
+#define CLOSED_POSITION_SENSOR_IDX 			 (1)
+#define SENSOR_DEBOUNCE_MICROSECONDS     (200)
 
 /*
-**	Function prototypes
+**	Function prototypes for file operations
 */
 static int 		 __init hatch2sr_driver_init(void);
 static void 	 __exit hatch2sr_driver_exit(void);
@@ -56,6 +66,11 @@ static struct file_operations fops = {
 	.write = 		hatch2sr_write
 };
 
+/*
+** Function prototypes for gpio operations
+*/
+static irqreturn_t sensor_gpio_isr(int irq, void* dev_id);
+
 struct miscdevice hatch2srmisc = {
 	.name	= "hatch2sr",
 	.minor	= MISC_DYNAMIC_MINOR,
@@ -65,9 +80,17 @@ struct miscdevice hatch2srmisc = {
 
 dev_t dev = 0;
 struct pwm_device* pwm_engine_dev;
-struct gpio_desc* open_position_sensor;
-struct gpio_desc* closed_position_sensor;
 
+struct sensor_desc {
+	struct gpio_desc* gpio_desc;
+	int gpio_id;
+	int irq;
+};
+
+struct sensors {
+	struct sensor_desc open_position;
+	struct sensor_desc closed_position;
+} sensors;
 
 /*
 ** This function is called when somebody has called open driver file.
@@ -94,17 +117,7 @@ static int hatch2sr_release(struct inode* inode, struct file* file)
 */
 static ssize_t hatch2sr_read(struct file* file, char __user* buf, size_t len, loff_t* off)
 {
-	int closed_position_sensor_val;
-	int open_position_sensor_val;
-
-	closed_position_sensor_val = gpiod_get_value(closed_position_sensor);
-	open_position_sensor_val = gpiod_get_value(open_position_sensor);
-
 	printk("%s\n", __FUNCTION__);
-	printk("Sensor closed value: %d\n", closed_position_sensor_val);
-	printk("Sensor open value: %d\n", open_position_sensor_val);
-
-	gpiod_set_value(open_position_sensor, 1);
 
 	return 0;
 }
@@ -125,42 +138,97 @@ static int hatch2sr_driver_probe(struct platform_device *pdev)
 
 	printk("%s\n", __FUNCTION__);
 	
-	//Initialize pwm
+	// Initialize pwm
 	pwm_engine_dev = pwm_get(dev, "motor1");
 
 	if (IS_ERR(pwm_engine_dev)) {
 		dev_err(dev, "Cannot initialize pwm dev.\n");
 		return -1;
 	}
+	// Configure -> pwm  
+	pwm_config(pwm_engine_dev, PWM_ENGINE_INITIAL_DUTY, PWM_ENGINE_PERIOD_NS);
+	pwm_enable(pwm_engine_dev);
 
-	//Initialize gpios for sensors
-	open_position_sensor = gpiod_get_index(dev, NULL, OPEN_POSITION_SENSOR_IDX, GPIOD_IN);
-	closed_position_sensor = gpiod_get_index(dev, NULL, CLOSED_POSITION_SENSOR_IDX, GPIOD_IN);
+	// Initialize gpios for sensors
+	sensors.open_position.gpio_desc = gpiod_get_index(dev, NULL, OPEN_POSITION_SENSOR_IDX, GPIOD_IN);
+	sensors.open_position.gpio_id = desc_to_gpio(sensors.open_position.gpio_desc);
 
-	if (IS_ERR(open_position_sensor) || IS_ERR(closed_position_sensor)) {
+	sensors.closed_position.gpio_desc = gpiod_get_index(dev, NULL, CLOSED_POSITION_SENSOR_IDX, GPIOD_IN);
+	sensors.closed_position.gpio_id = desc_to_gpio(sensors.closed_position.gpio_desc);
+
+	if (IS_ERR(sensors.open_position.gpio_desc) || IS_ERR(sensors.closed_position.gpio_desc)) {
 		dev_err(dev, "Cannot initialize gpios for sensors.\n");
 		return -1;
 	}
 
-	//Configure pwm && gpios  
-	pwm_config(pwm_engine_dev, PWM_ENGINE_INITIAL_DUTY, PWM_ENGINE_PERIOD_NS);
-	pwm_enable(pwm_engine_dev);
+	// Configure -> gpios
+	gpiod_direction_input(sensors.open_position.gpio_desc);
+	gpiod_export(sensors.open_position.gpio_desc, false);
+	
+	gpiod_direction_input(sensors.closed_position.gpio_desc);	
+	gpiod_export(sensors.closed_position.gpio_desc, false);
 
-	gpiod_export(open_position_sensor, false);
-	gpiod_export(closed_position_sensor, false);
+	sensors.open_position.irq = gpio_to_irq(sensors.open_position.gpio_id);
+	if (request_irq(sensors.open_position.irq, sensor_gpio_isr, IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING, 
+			"hatch2sr_o_sensor.", sensor_gpio_isr)) {
+		dev_err(dev, "Cannot request isr for open position sensor.\n");
+		return -1;
+	}
+
+	// sensors.closed_position.irq = gpio_to_irq(sensors.closed_position.gpio_id);
+	// if (request_irq(sensors.closed_position.irq, sensor_gpio_isr, IRQF_TRIGGER_LOW , 
+	// 		"hatch2sr c_sensor.", sensor_gpio_isr)) {
+	// 	dev_err(dev, "Cannot request isr for closed position sensor.\n");
+	// 	return -1;
+	// }
+
+	printk("Irq for open position sensor: %d\n", sensors.open_position.irq);
+	printk("Irq for closed position sensor: %d\n", sensors.closed_position.irq);
+
 
  	return 0;
 }
+
 static int hatch2sr_driver_remove(struct platform_device *pdev)
 {
 	printk("%s\n", __FUNCTION__);
 
 	pwm_put(pwm_engine_dev);
-	gpiod_put(open_position_sensor);
-	gpiod_put(closed_position_sensor);
+
+	//TODO: Release gpios
+	//TODO: Relase isr
 
 	return 0;
 }
+
+// GPIO RELATED FUNCTIONS // 
+static irqreturn_t sensor_gpio_isr(int irq, void* dev_id)
+{
+	static unsigned int counter = 0;
+
+	#ifdef EN_DEBOUNCE
+		unsigned long diff = jiffies - old_jiffie;
+		if (diff < 100)
+		{
+			return IRQ_HANDLED;
+		}
+		
+		old_jiffie = jiffies;
+	#endif  
+
+	++counter;
+
+	if (dev_id == sensor_gpio_isr) {
+		printk("Dev id is ok\n");
+	} else {
+		printk("Dev is IS NOT OK!!!\n");
+	}
+
+	printk("Handle interrupt\n");
+
+	return IRQ_HANDLED;	
+}
+
 
 static const struct of_device_id hatch2sr_match[] = {
 	{ .compatible = "hatch2sr", },
