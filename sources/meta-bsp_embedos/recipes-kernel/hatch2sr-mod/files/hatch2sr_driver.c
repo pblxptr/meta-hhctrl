@@ -65,9 +65,10 @@ static struct file_operations fops = {
 };
 
 struct hatch2sr_device {
-	dev_t dev;
+	dev_t num;
 	struct cdev cdev;
-	struct class* dev_class;
+	struct class* class;
+	struct device* dev;
 } hatch2sr_dev;
 
 /*
@@ -112,33 +113,33 @@ static ssize_t hatch2sr_write(struct file* file, const char __user* buf, size_t 
 
 static int hatch2sr_driver_probe(struct platform_device* pdev)
 {
-	struct device* device = &pdev->dev;
+		hatch2sr_dev.dev = &pdev->dev;
 
 	// Allocate Major number 
-	if (alloc_chrdev_region(&hatch2sr_dev.dev, DEV_BASE_MINOR, DEV_COUNT, "hatch2sr") < 0) {
-		dev_err(device, "Cannot allocate major number for device.\n");
+	if (alloc_chrdev_region(&hatch2sr_dev.num, DEV_BASE_MINOR, DEV_COUNT, "hatch2sr") < 0) {
+		dev_err(hatch2sr_dev.dev, "Cannot allocate major number for device.\n");
 		return -1;
 	}
-	pr_info("Major: %d, Minor: %d \n", MAJOR(hatch2sr_dev.dev), MINOR(hatch2sr_dev.dev));
+	pr_info("Major: %d, Minor: %d \n", MAJOR(hatch2sr_dev.num), MINOR(hatch2sr_dev.num));
 
 	//Initializing cdev for driver
 	cdev_init(&hatch2sr_dev.cdev, &fops);
 
 	//Add character device
-		if((cdev_add(&hatch2sr_dev.cdev, hatch2sr_dev.dev, DEV_COUNT)) < 0){
-				dev_err(device, "Cannot add the device to the system\n");
+		if((cdev_add(&hatch2sr_dev.cdev, hatch2sr_dev.num, DEV_COUNT)) < 0){
+				dev_err(hatch2sr_dev.dev, "Cannot add the device to the system\n");
 				goto r_cdev;
 		}
 
 	//Create device class 
-	if((hatch2sr_dev.dev_class = class_create(THIS_MODULE, "hatch2sr")) == NULL){ // unregister_chrdev_region + cdev_del
-			dev_err(device, "Cannot create the struct class for device\n");
+	if((hatch2sr_dev.class = class_create(THIS_MODULE, "hatch2sr")) == NULL){ // unregister_chrdev_region + cdev_del
+			dev_err(hatch2sr_dev.dev, "Cannot create the struct class for device\n");
 			goto r_class;
 	}
 
 	//Create device nodes
-	if((device_create(hatch2sr_dev.dev_class, NULL, hatch2sr_dev.dev, NULL, "hatch2sr")) == NULL) {  // unregister_chrdev_region + cdev_del + class_destroy
-			dev_err(device, "Cannot create the Device\n");
+	if((device_create(hatch2sr_dev.class, NULL, hatch2sr_dev.num, NULL, "hatch2sr")) == NULL) {  // unregister_chrdev_region + cdev_del + class_destroy
+			dev_err(hatch2sr_dev.dev, "Cannot create the Device\n");
 			goto r_device;
 	}
 
@@ -146,11 +147,11 @@ static int hatch2sr_driver_probe(struct platform_device* pdev)
 	return 0;
 
 	r_device:
-		class_destroy(hatch2sr_dev.dev_class);	
+		class_destroy(hatch2sr_dev.class);	
 	r_class:
 		cdev_del(&hatch2sr_dev.cdev);	
 	r_cdev: 
-		unregister_chrdev_region(hatch2sr_dev.dev, DEV_COUNT);	
+		unregister_chrdev_region(hatch2sr_dev.num, DEV_COUNT);	
 		return -1;
 }
 
@@ -158,10 +159,10 @@ static int hatch2sr_driver_remove(struct platform_device *pdev)
 {
 	printk("%s\n", __FUNCTION__);
 
-	device_destroy(hatch2sr_dev.dev_class, hatch2sr_dev.dev);
-	class_destroy(hatch2sr_dev.dev_class);
+	device_destroy(hatch2sr_dev.class, hatch2sr_dev.num);
+	class_destroy(hatch2sr_dev.class);
 	cdev_del(&hatch2sr_dev.cdev);
-	unregister_chrdev_region(hatch2sr_dev.dev, DEV_COUNT);
+	unregister_chrdev_region(hatch2sr_dev.num, DEV_COUNT);
 
 	pr_info("Hatch2sr Kernel Module removed successfully...\n");
 
