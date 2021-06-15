@@ -1,4 +1,5 @@
-obj-m := hatch2sr.o
+obj-m := hatch2sr.o 
+hatch2sr-objs := hatch2sr_base.o engine.o sensor.o
 
 SRC := $(shell pwd)
 
