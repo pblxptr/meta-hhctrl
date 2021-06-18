@@ -1,4 +1,5 @@
 #include "hatch2sr.h"
+
 #include <stddef.h>
 #include <linux/gpio.h>
 #include <linux/interrupt.h>
@@ -7,13 +8,6 @@
 #include "engine.h"
 #include "relay.h"
 #include "sensor.h"
-
-typedef struct hatch2sr {
-  struct engine engine;
-  struct sensor openpos;
-  struct sensor closedpos;
-  struct relay relay;
-} hatch2sr;
 
 /* Hatch private functions declarations */
 static irqreturn_t sensor_isr(int irq, void* dev_id);
@@ -50,6 +44,10 @@ void hatch2sr_deinit()
 {
 }
 
+hatch2sr* hatch2sr_get()
+{
+  return &hatch;
+}
 
 void hatch2sr_open()
 {
