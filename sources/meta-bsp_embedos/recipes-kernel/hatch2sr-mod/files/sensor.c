@@ -1,30 +1,34 @@
 #include "sensor.h"
+#include <stdbool.h>
+#include <stddef.h>
 
-void sensor_init(Sensor* sensor, struct gpio_desc* gpio_desc)
+//TODO: Make dependencies null
+
+int sensor_init(sensor* sensor, struct gpio_desc* gpio, irq_handler_t irqhandler)
 {
-  sensor->gpio_desc = gpio_desc;
-	sensor->gpio_id = desc_to_gpio(sensor->gpio_desc);
+  sensor->gpio = gpio;
+	sensor->gpio_id = desc_to_gpio(sensor->gpio);
 	sensor->irq = gpio_to_irq(sensor->gpio_id);
 
-	gpiod_direction_input(sensor->gpio_desc);
-	gpiod_export(sensor->gpio_desc, false);
+	gpiod_direction_input(sensor->gpio);
+	gpiod_export(sensor->gpio, false);
+
+	if (request_irq(sensor->irq, irqhandler, IRQF_TRIGGER_FALLING, 
+			"hatch2sr.", NULL)) //TODO: Should it be null or func ptr?
+	{	
+    return -1;
+	}
+
+  return 0;
 }
 
-void sensor_deinit(Sensor* sensor)
+void sensor_deinit(sensor* sensor)
 {
-  gpiod_unexport(sensor->gpio_desc);
+	free_irq(sensor->irq, NULL);
+	gpiod_unexport(sensor->gpio);
 }
 
-int sensor_irq(Sensor* sensor)
+int sensor_get_value(sensor* sensor)
 {
-  return sensor->irq;
-}
-
-Sensor_state sensor_get_val(Sensor* sensor)
-{
-  if (gpiod_get_value(sensor->gpio_desc)) {
-    return SENSOR_STATE_ACTIVE;
-  }
-  
-  return SENSOR_STATE_NOT_ACTIVE;
+  return gpiod_get_value(sensor->gpio);
 }

@@ -8,11 +8,18 @@
 #define ENGINE_PWM_PERIOD_NS    (10000000)
 #define ENGINE_PWM_INITIAL_DUTY (0)
 
-typedef struct __Engine__ {
-  struct pwm_device* pwm;
-} Engine;
+typedef enum engine_state {
+  ENGINE_STATE_IDLE, 
+  ENGINE_STATE_RUNNING
+} engine_state;
 
-void engine_init(Engine* enigne, struct pwm_device* pwm);
-void engine_deinit(Engine* engine);
-void engine_start(Engine* engine);
-void engine_stop(Engine* engine);
+typedef struct engine {
+  struct pwm_device* pwm;
+  engine_state state;
+} engine;
+
+void engine_init(engine* enigne, struct pwm_device* pwm);
+void engine_deinit(engine* engine);
+void engine_start(engine* engine);
+void engine_stop(engine* engine);
+engine_state engine_get_state(engine* engine);

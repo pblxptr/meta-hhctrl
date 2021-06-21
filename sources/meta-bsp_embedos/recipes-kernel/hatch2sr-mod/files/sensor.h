@@ -1,20 +1,14 @@
 #pragma once
 
 #include <linux/gpio.h>
+#include <linux/interrupt.h>
 
-typedef enum __Sensor_state__ {
-  SENSOR_STATE_NOT_ACTIVE, 
-  SENSOR_STATE_ACTIVE
-} Sensor_state;
-
-typedef struct __Sensor__ {
-  struct gpio_desc* gpio_desc;
+typedef struct sensor {
+  struct gpio_desc* gpio;
   int gpio_id;
   int irq;
-  Sensor_state state;
-} Sensor ;
+} sensor;
 
-void sensor_init(Sensor* sensor, struct gpio_desc*);
-void sensor_deinit(Sensor* sensor);
-int sensor_irq(Sensor* sensor);
-Sensor_state sensor_get_val(Sensor* sensor);
+int sensor_init(sensor* sensor, struct gpio_desc* gpio, irq_handler_t irqhandler);
+void sensor_deinit(sensor* sensor);
+int sensor_get_value(sensor* sensor);

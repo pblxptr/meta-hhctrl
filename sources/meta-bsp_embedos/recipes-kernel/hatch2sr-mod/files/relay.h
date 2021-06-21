@@ -1,5 +1,7 @@
 #pragma once
 
+#include <linux/gpio.h>
+
 typedef struct relay {
   struct gpio_desc* gpio;
   int gpio_id;

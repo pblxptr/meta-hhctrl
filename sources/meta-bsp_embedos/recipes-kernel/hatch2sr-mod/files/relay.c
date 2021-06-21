@@ -1,5 +1,4 @@
 #include "relay.h"
-#include <linux/gpio.h>
 #include <stdbool.h>
 
 //TODO: Make dependencies null
