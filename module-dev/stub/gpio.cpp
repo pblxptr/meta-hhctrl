@@ -67,3 +67,12 @@ void gpiod_export(struct gpio_desc* gpio, int may_change)
 
   MockApi<GMockGpio>::get_mock()->gpiod_export_impl(gpio, may_change);
 }
+
+void gpiod_unexport(struct gpio_desc* gpio)
+{
+  if (!MockApi<GMockGpio>::has_mock()) {
+    return;
+  }
+
+  MockApi<GMockGpio>::get_mock()->gpiod_unexport_impl(gpio);
+}

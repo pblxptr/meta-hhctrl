@@ -6,5 +6,6 @@ typedef struct relay {
 } relay;
 
 int relay_init(relay* relay, struct gpio_desc* gpio);
+void relay_deinit(relay*);
 void relay_set_to_open(relay* relay);
 void relay_set_to_close(relay* relay);

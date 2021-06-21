@@ -9,11 +9,13 @@ extern "C" {
 #include <gmock_sensor.hpp>
 #include <gmock_relay.hpp>
 
+namespace {
+  using namespace ::testing;
+}
 
-using namespace ::testing;
-
-constexpr int RET_CODE_OK = 0;
-constexpr int SENSOR_VALUE_LOW = 0;
+constexpr int RET_CODE_OK =       0;
+constexpr int RET_CODE_FAIL =    -1;
+constexpr int SENSOR_VALUE_LOW =  0;
 constexpr int SENSOR_VALUE_HIGH = 1;
 
 class SensorMockWrapper : public GMockSensor
@@ -67,13 +69,19 @@ private:
   }
 };
 
-struct Hatch2srTest : public Test
+template<class T>
+struct Hatch2srTestBase : public T
 {
   NiceMock<GMockEngine> engine_mock_;
   NiceMock<GMockSensor> openpos_sensor_mock_;
   NiceMock<GMockSensor> closedpos_sensor_mock_;
   NiceMock<SensorMockWrapper> sensor_mock_wrapper_{openpos_sensor_mock_, closedpos_sensor_mock_, hatch2sr_get()};
   NiceMock<GMockRelay> relay_mock_;
+
+  pwm_device pwm_dev_;
+  gpio_desc openpos_gpio_;
+  gpio_desc closedpos_gpio_;
+  gpio_desc relay_gpio_;
 
   void SetUp() override
   {
@@ -105,25 +113,15 @@ struct Hatch2srTest : public Test
   void init_sut()
   {
     //Arrange
-    auto pwm_dev = pwm_device{};
-    auto openpos_gpio = gpio_desc{};
-    auto closedpos_gpio = gpio_desc{};
-    auto relay_gpio = gpio_desc{};
-
     EXPECT_CALL(engine_mock_, engine_init_impl(An<engine*>(), An<pwm_device*>()));
     EXPECT_CALL(openpos_sensor_mock_, sensor_init_impl(An<sensor*>(), An<gpio_desc*>(), An<irq_handler_t>()));
     EXPECT_CALL(closedpos_sensor_mock_, sensor_init_impl(An<sensor*>(), An<gpio_desc*>(), An<irq_handler_t>()));
     EXPECT_CALL(relay_mock_, relay_init_impl(An<relay*>(), An<gpio_desc*>()));
 
     //Act
-    const auto retcode = hatch2sr_init(&pwm_dev, &openpos_gpio, &closedpos_gpio, &relay_gpio);
+    const auto retcode = hatch2sr_init(&pwm_dev_, &openpos_gpio_, &closedpos_gpio_, &relay_gpio_);
 
     //Assert
     ASSERT_EQ(retcode, RET_CODE_OK);
   }
 };
-
-TEST_F(Hatch2srTest, WhenAllDependenciesAreNotNullThenDriverShouldBeInitialzied)
-{
-  init_sut();
-}

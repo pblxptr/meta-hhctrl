@@ -9,6 +9,8 @@
 #include "relay.h"
 #include "sensor.h"
 
+//TODO: Make dependencies null
+
 /* Hatch private functions declarations */
 static irqreturn_t sensor_isr(int irq, void* dev_id);
 static bool can_change_position();
@@ -42,6 +44,10 @@ int hatch2sr_init(struct pwm_device* pwm, struct gpio_desc* openpos, struct  gpi
 
 void hatch2sr_deinit()
 {
+  engine_deinit(&hatch.engine);
+  sensor_deinit(&hatch.openpos);
+  sensor_deinit(&hatch.closedpos);
+  relay_deinit(&hatch.relay);
 }
 
 hatch2sr* hatch2sr_get()

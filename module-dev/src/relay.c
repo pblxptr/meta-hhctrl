@@ -2,15 +2,26 @@
 #include <linux/gpio.h>
 #include <stdbool.h>
 
+//TODO: Make dependencies null
+
+#define DEFAULT_STATE 0
+#define ALLOW_DIRECTION_CHANGE false
+
 int relay_init(relay* relay, struct gpio_desc* gpio)
 {
   relay->gpio = gpio;
 	relay->gpio_id = desc_to_gpio(relay->gpio);
 
-	gpiod_direction_output(relay->gpio, 0);
-	gpiod_export(relay->gpio, false);
+	gpiod_direction_output(relay->gpio, DEFAULT_STATE);
+	gpiod_export(relay->gpio, ALLOW_DIRECTION_CHANGE);
 
   return 0;
+}
+
+void relay_deinit(relay* relay)
+{
+  gpiod_set_value(relay->gpio, DEFAULT_STATE);  
+	gpiod_unexport(relay->gpio);
 }
 
 void relay_set_to_open(relay* relay)

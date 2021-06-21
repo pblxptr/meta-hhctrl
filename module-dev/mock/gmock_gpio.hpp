@@ -15,4 +15,5 @@ struct GMockGpio
   MOCK_METHOD(void, gpiod_direction_input_impl, (gpio_desc*));
   MOCK_METHOD(int, gpiod_direction_output_impl, (gpio_desc*, int));
   MOCK_METHOD(void, gpiod_export_impl, (gpio_desc*, int));
+  MOCK_METHOD(void, gpiod_unexport_impl, (gpio_desc*));
 };

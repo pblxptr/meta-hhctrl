@@ -11,3 +11,4 @@ int gpio_to_irq(int gpio);
 void gpiod_direction_input(struct gpio_desc* gpio);
 int gpiod_direction_output(struct gpio_desc *desc, int value);
 void gpiod_export(struct gpio_desc* gpio, int change);
+void gpiod_unexport(struct gpio_desc*);

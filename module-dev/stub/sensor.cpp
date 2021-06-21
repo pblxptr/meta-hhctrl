@@ -14,6 +14,15 @@ int sensor_init(sensor* sensor, struct gpio_desc* gpio, irq_handler_t irqhandler
   return MockApi<GMockSensor>::get_mock()->sensor_init(sensor, gpio, irqhandler);
 }
 
+void sensor_deinit(sensor* sensor)
+{
+  if (!MockApi<GMockSensor>::has_mock()) {
+    return;
+  }
+
+  MockApi<GMockSensor>::get_mock()->sensor_deinit(sensor);
+}
+
 int sensor_get_value(sensor* sensor)
 {
   if (!MockApi<GMockSensor>::has_mock()) {

@@ -43,8 +43,10 @@ target_link_libraries(${RELAY_TEST} gtest_main gmock gtest pthread)
 
 # Hatch2sr tests
 set(HATCH2SR_TEST ${CMAKE_PROJECT_NAME}-hatch2sr)
-add_executable(${HATCH2SR_TEST} 
-  test/hatch2sr_test.cpp
+add_executable(${HATCH2SR_TEST}
+  test/hatch2sr_general_test.cpp
+  test/hatch2sr_test_for_open.cpp
+  test/hatch2sr_test_for_close.cpp
   src/hatch2sr.c
   stub/sensor.cpp
   stub/engine.cpp

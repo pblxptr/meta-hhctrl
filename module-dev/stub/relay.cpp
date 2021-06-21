@@ -14,6 +14,15 @@ int relay_init(relay* relay, gpio_desc* gpio)
   return MockApi<GMockRelay>::get_mock()->relay_init_impl(relay, gpio);
 }
 
+void relay_deinit(relay* relay)
+{
+  if (!MockApi<GMockRelay>::has_mock()) {
+    return;
+  }
+
+  MockApi<GMockRelay>::get_mock()->relay_deinit_impl(relay);
+}
+
 void relay_set_to_open(relay* relay)
 {
   if (!MockApi<GMockRelay>::has_mock()) {

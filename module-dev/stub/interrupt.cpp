@@ -14,3 +14,12 @@ int request_irq(unsigned int irq, irq_handler_t handler, unsigned long flags,
 
   return MockApi<GMockInterrupt>::get_mock()->request_irq_impl(irq, handler, flags, name, dev);
 }
+
+void free_irq(unsigned int irq, void* dev)
+{
+  if (!MockApi<GMockInterrupt>::has_mock()) {
+    return;
+  }
+
+  MockApi<GMockInterrupt>::get_mock()->free_irq_impl(irq, dev);
+}

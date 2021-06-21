@@ -10,4 +10,5 @@ typedef struct sensor {
 } sensor;
 
 int sensor_init(sensor* sensor, struct gpio_desc* gpio, irq_handler_t irqhandler);
+void sensor_deinit(sensor* sensor);
 int sensor_get_value(sensor* sensor);
