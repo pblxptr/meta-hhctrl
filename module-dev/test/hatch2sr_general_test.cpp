@@ -85,3 +85,19 @@ TEST_F(Hatch2srGeneralTest, WhenBothSensorsIndicateActiveStateThenNeitherOpenOrC
 
   //Assert - covered by expectations
 }
+
+TEST_F(Hatch2srGeneralTest, WhenBothSensorsIndicateActiveStateThenHatchShouldIndicateFaultyState)
+{
+  //Arrange
+  EXPECT_CALL(openpos_sensor_mock_, sensor_get_value_impl(An<sensor*>()))
+    .WillRepeatedly(Return(SENSOR_VALUE_HIGH));
+  EXPECT_CALL(closedpos_sensor_mock_, sensor_get_value_impl(An<sensor*>()))
+    .WillRepeatedly(Return(SENSOR_VALUE_HIGH));
+
+  //Act
+  init_sut();
+  const auto state = hatch2sr_get_state();
+  
+  //Assert 
+  ASSERT_EQ(state, HATCH_STATE_FAULTY);
+}

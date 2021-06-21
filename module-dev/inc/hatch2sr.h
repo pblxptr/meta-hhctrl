@@ -2,6 +2,7 @@
 
 #include <linux/gpio.h>
 #include <linux/pwm.h>
+#include <stdbool.h>
 
 #include <engine.h>
 #include <sensor.h>
@@ -26,5 +27,4 @@ void hatch2sr_deinit();
 hatch2sr* hatch2sr_get();
 void hatch2sr_open();
 void hatch2sr_close();
-
 hatch_state hatch2sr_get_state();

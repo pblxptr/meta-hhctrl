@@ -19,7 +19,7 @@ TEST_F(Hatch2srTestForClose, WhenHatchIsCalledToCloseThenRelayPositonShouldBeSet
   //Assert - covered by expectation
 }
 
-TEST_F(Hatch2srTestForClose, WhenHatchIsCalledToCloseAndItIsAlreadyOpenThenNothingShouldHappen)
+TEST_F(Hatch2srTestForClose, WhenHatchIsCalledToCloseAndItIsAlreadyOpenThenNothingShouldHappened)
 {
   //Arrange
   EXPECT_CALL(closedpos_sensor_mock_, sensor_get_value_impl(An<sensor*>()))
@@ -34,4 +34,21 @@ TEST_F(Hatch2srTestForClose, WhenHatchIsCalledToCloseAndItIsAlreadyOpenThenNothi
   hatch2sr_close();
 
   //Assert - covered by expectation
+}
+
+TEST_F(Hatch2srTestForClose, WhenOpenSensorStateIsActiveThenHatchStateShouldIndicateOpenPosition)
+{
+  // Arrange
+  EXPECT_CALL(closedpos_sensor_mock_, sensor_get_value_impl(An<sensor*>()))
+    .Times(2)
+    .WillRepeatedly(Return(SENSOR_VALUE_HIGH));
+  EXPECT_CALL(openpos_sensor_mock_, sensor_get_value_impl(An<sensor*>()))
+    .Times(2)
+    .WillRepeatedly(Return(SENSOR_VALUE_LOW));
+
+  //Act
+  const auto state = hatch2sr_get_state();
+
+  //Assert
+  ASSERT_EQ(state, HATCH_STATE_CLOSED);
 }

@@ -36,3 +36,19 @@ TEST_F(Hatch2srTestForOpen, WhenHatchIsCalledToOpenAndItIsAlreadyOpenThenNothing
   //Assert - covered by expectation
 }
 
+TEST_F(Hatch2srTestForOpen, WhenOpenSensorStateIsActiveThenHatchStateShouldIndicateOpenPosition)
+{
+  // Arrange
+  EXPECT_CALL(openpos_sensor_mock_, sensor_get_value_impl(An<sensor*>()))
+    .Times(2)
+    .WillRepeatedly(Return(SENSOR_VALUE_HIGH));
+  EXPECT_CALL(closedpos_sensor_mock_, sensor_get_value_impl(An<sensor*>()))
+    .Times(2)
+    .WillRepeatedly(Return(SENSOR_VALUE_LOW));
+
+  //Act
+  const auto state = hatch2sr_get_state();
+
+  //Assert
+  ASSERT_EQ(state, HATCH_STATE_OPEN);
+}
