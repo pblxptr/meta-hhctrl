@@ -32,9 +32,11 @@
 #include <linux/interrupt.h>
 #include <linux/cdev.h>
 #include <linux/sysfs.h>
-#include<linux/kobject.h> 
+#include <linux/kobject.h>
+
 #include "sensor.h"
 #include "engine.h"
+#include "hatch2sr.h"
 
 
 #define EN_DEBOUNCE
@@ -48,21 +50,23 @@ unsigned long old_jiffie = 0;
 #define DEV_BASE_MINOR (0)
 #define DEV_COUNT  (1)
 
+#define OPEN_POSITION_SENSOR_IDX   			 (0)
+#define CLOSED_POSITION_SENSOR_IDX 			 (1)
+#define RELAY_POSITION_SENSOR_IDX        (2)
+
 /*
 ** Function prototypes for attributes
 */
-ssize_t hatch2sr_show_status(struct device *dev, struct device_attribute *attr, char *buf);
-ssize_t hatch2sr_store_status(struct device *dev, struct device_attribute *attr, const char *buf, size_t count);
+ssize_t hatch2sr_show_attr_status(struct device *dev, struct device_attribute *attr, char *buf);
+ssize_t hatch2sr_store_attr_status(struct device *dev, struct device_attribute *attr, const char *buf, size_t count);
 
 /*
 **	Function prototypes for file operations
 */
-static int 		 __init hatch2sr_driver_init(void);
-static void 	 __exit hatch2sr_driver_exit(void);
-static int 		 hatch2sr_open(struct inode*, struct file*);
-static int  	 hatch2sr_release(struct inode*, struct file*);
-static ssize_t hatch2sr_read(struct file*, char __user*, size_t, loff_t*);
-static ssize_t hatch2sr_write(struct file*, const char __user*, size_t, loff_t*);
+static int 		 hatch2sr_fop_open(struct inode*, struct file*);
+static int  	 hatch2sr_fop_release(struct inode*, struct file*);
+static ssize_t hatch2sr_fop_read(struct file*, char __user*, size_t, loff_t*);
+static ssize_t hatch2sr_fop_write(struct file*, const char __user*, size_t, loff_t*);
 
 /*
 ** Driver struct 
@@ -78,16 +82,16 @@ struct hatch2sr_device {
 */ 
 static struct file_operations fops = {
 	.owner = 		THIS_MODULE,
-	.open = 		hatch2sr_open,
-	.release = 	hatch2sr_release,
-	.read = 		hatch2sr_read,
-	.write = 		hatch2sr_write
+	.open = 		hatch2sr_fop_open,
+	.release = 	hatch2sr_fop_release,
+	.read = 		hatch2sr_fop_read,
+	.write = 		hatch2sr_fop_write
 };
 
 /*
 ** Attributtes 
 */
-static DEVICE_ATTR(status, S_IWUSR | S_IRUGO, hatch2sr_show_status, hatch2sr_store_status);
+static DEVICE_ATTR(status, S_IWUSR | S_IRUGO, hatch2sr_show_attr_status, hatch2sr_store_attr_status);
 
 static struct attribute* hatch2sr_attrs[] = {
 	&dev_attr_status.attr,
@@ -107,7 +111,7 @@ static const struct attribute_group* hatch2sr_groups[] = {
 /* Function definitions for attributes
 ** This function is called when somebody reads the status attribute.
 */
-ssize_t hatch2sr_show_status(struct device *dev, struct device_attribute *attr, char *buf)
+ssize_t hatch2sr_show_attr_status(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	return 0;
 }
@@ -115,7 +119,7 @@ ssize_t hatch2sr_show_status(struct device *dev, struct device_attribute *attr, 
 /*
 ** This function is called when somebody writes the status attribute.
 */
-ssize_t hatch2sr_store_status(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+ssize_t hatch2sr_store_attr_status(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	return 0;
 }
@@ -124,7 +128,7 @@ ssize_t hatch2sr_store_status(struct device *dev, struct device_attribute *attr,
 /* Function definitions for file operations
 ** This function is called when somebody has called open driver file.
 */
-static int	hatch2sr_open(struct inode* inode, struct file* file)
+static int	hatch2sr_fop_open(struct inode* inode, struct file* file)
 {
 	printk("%s\n", __FUNCTION__);
 
@@ -134,7 +138,7 @@ static int	hatch2sr_open(struct inode* inode, struct file* file)
 /*
 ** This function is called when somebody has called close driver file.
 */
-static int hatch2sr_release(struct inode* inode, struct file* file)
+static int hatch2sr_fop_release(struct inode* inode, struct file* file)
 {
 	printk("%s\n", __FUNCTION__);
 
@@ -144,7 +148,7 @@ static int hatch2sr_release(struct inode* inode, struct file* file)
 /*
 ** This function is called when somebody has called read driver file.
 */
-static ssize_t hatch2sr_read(struct file* file, char __user* buf, size_t len, loff_t* off)
+static ssize_t hatch2sr_fop_read(struct file* file, char __user* buf, size_t len, loff_t* off)
 {
 	printk("%s\n", __FUNCTION__);
 
@@ -154,7 +158,7 @@ static ssize_t hatch2sr_read(struct file* file, char __user* buf, size_t len, lo
 /*
 ** This function is called when somebody has called write driver file.
 */
-static ssize_t hatch2sr_write(struct file* file, const char __user* buf, size_t len, loff_t* off)
+static ssize_t hatch2sr_fop_write(struct file* file, const char __user* buf, size_t len, loff_t* off)
 {
 	printk("%s\n", __FUNCTION__);
 
@@ -163,6 +167,11 @@ static ssize_t hatch2sr_write(struct file* file, const char __user* buf, size_t 
 
 static int hatch2sr_driver_probe(struct platform_device* pdev)
 {
+	struct pwm_device* pwm_dev;
+	struct gpio_desc* gpio_sensor_open;
+	struct gpio_desc* gpio_sensor_closed;
+	struct gpio_desc* gpio_relay;
+
 	hatch2sr_dev.dev = &pdev->dev;
 
 	// Allocate Major number 
@@ -194,9 +203,50 @@ static int hatch2sr_driver_probe(struct platform_device* pdev)
 			goto r_device;
 	}
 
-	pr_info("Hatch2sr Kernel Module probed successfully...\n");
+	//Configure peripherals
+	pwm_dev = pwm_get(hatch2sr_dev.dev, "motor1");
+
+	if (IS_ERR(pwm_dev)) {
+		dev_err(hatch2sr_dev.dev, "Cannot get pwm dev for engine.\n");
+		goto r_device;
+	}
+	
+	gpio_sensor_open = gpiod_get_index(hatch2sr_dev.dev, NULL, OPEN_POSITION_SENSOR_IDX, GPIOD_IN);
+	if (IS_ERR(gpio_sensor_open)) {
+		dev_err(hatch2sr_dev.dev, "Cannot get gpio dev for open position sensor.\n");
+		goto r_pwmdev;
+	}
+
+	gpio_sensor_closed = gpiod_get_index(hatch2sr_dev.dev, NULL, CLOSED_POSITION_SENSOR_IDX, GPIOD_IN);
+	if (IS_ERR(gpio_sensor_closed)) {
+		dev_err(hatch2sr_dev.dev, "Cannot get gpio dev for closed position sensor.\n");
+		goto r_openposdev;
+	}
+
+	// gpio_relay = gpiod_get_index(hatch2sr_dev.dev, NULL, RELAY_POSITION_SENSOR_IDX, GPIOD_OUT_HIGH); //TODO: Should it be out_low?????
+	// if (IS_ERR(gpio_relay)) {
+	// 	dev_err(hatch2sr_dev.dev, "Cannot get gpio dev for relayr.\n");
+	// 	goto r_closedposdev;
+	// }
+
+	// if (hatch2sr_init(pwm_dev, gpio_sensor_open, gpio_sensor_closed, gpio_relay)) {
+	// 	dev_err(hatch2sr_dev.dev, "Cannot initialize logic for hatch2sr driver.\n");
+	// 	goto r_relaydev;
+	// }
+
+	//Initialize driver logic	
+	pr_info("Hatch2sr Kernel Module probed successfully test...\n");
+
 	return 0;
 
+	r_relaydev:
+		gpiod_put(gpio_relay);
+	r_closedposdev:
+		gpiod_put(gpio_sensor_closed);	
+	r_openposdev:
+		gpiod_put(gpio_sensor_open);
+	r_pwmdev:
+		pwm_put(pwm_dev);
 	r_device:
 		class_destroy(hatch2sr_dev.dev->class);	
 	r_class:
@@ -210,10 +260,12 @@ static int hatch2sr_driver_remove(struct platform_device *pdev)
 {
 	printk("%s\n", __FUNCTION__);
 
-	device_destroy(hatch2sr_dev.dev->class, hatch2sr_dev.num);
-	class_destroy(hatch2sr_dev.dev->class);
-	cdev_del(&hatch2sr_dev.cdev);
-	unregister_chrdev_region(hatch2sr_dev.num, DEV_COUNT);
+	// device_destroy(hatch2sr_dev.dev->class, hatch2sr_dev.num);
+	// class_destroy(hatch2sr_dev.dev->class);
+	// cdev_del(&hatch2sr_dev.cdev);
+	// unregister_chrdev_region(hatch2sr_dev.num, DEV_COUNT);
+
+	// hatch2sr_deinit();
 
 	pr_info("Hatch2sr Kernel Module removed successfully...\n");
 

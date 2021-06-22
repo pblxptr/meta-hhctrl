@@ -4,9 +4,9 @@
 #include <linux/pwm.h>
 #include <stdbool.h>
 
-#include <engine.h>
-#include <sensor.h>
-#include <relay.h>
+#include "engine.h"
+#include "sensor.h"
+#include "relay.h"
 
 typedef enum hatch_state {
   HATCH_STATE_OPEN,
@@ -23,8 +23,8 @@ typedef struct hatch2sr {
 } hatch2sr;
 
 int hatch2sr_init(struct pwm_device* pwm, struct gpio_desc* openpos, struct  gpio_desc* closepos, struct gpio_desc* relay);
-void hatch2sr_deinit();
-hatch2sr* hatch2sr_get();
-void hatch2sr_open();
-void hatch2sr_close();
-hatch_state hatch2sr_get_state();
+void hatch2sr_deinit(void);
+hatch2sr* hatch2sr_get(void);
+void hatch2sr_open(void);
+void hatch2sr_close(void);
+hatch_state hatch2sr_get_state(void);
