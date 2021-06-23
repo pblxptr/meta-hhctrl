@@ -52,7 +52,7 @@ unsigned long old_jiffie = 0;
 
 #define OPEN_POSITION_SENSOR_IDX   			 (0)
 #define CLOSED_POSITION_SENSOR_IDX 			 (1)
-#define RELAY_POSITION_SENSOR_IDX        (2)
+#define RELAY_POSITION_SENSOR_IDX        (2) //TODO: Possibly remove
 
 /*
 ** Function prototypes for attributes
@@ -174,6 +174,8 @@ static int hatch2sr_driver_probe(struct platform_device* pdev)
 
 	hatch2sr_dev.dev = &pdev->dev;
 
+	pr_info("Hello driver loaded.\n");
+
 	// Allocate Major number 
 	if (alloc_chrdev_region(&hatch2sr_dev.num, DEV_BASE_MINOR, DEV_COUNT, "hatch2sr") < 0) {
 		dev_err(hatch2sr_dev.dev, "Cannot allocate major number for device.\n");
@@ -211,28 +213,40 @@ static int hatch2sr_driver_probe(struct platform_device* pdev)
 		goto r_device;
 	}
 	
-	gpio_sensor_open = gpiod_get_index(hatch2sr_dev.dev, NULL, OPEN_POSITION_SENSOR_IDX, GPIOD_IN);
+	// gpio_sensor_open = gpiod_get_index(hatch2sr_dev.dev, "sensor", OPEN_POSITION_SENSOR_IDX, GPIOD_IN);
+	// if (IS_ERR(gpio_sensor_open)) {
+	// 	dev_err(hatch2sr_dev.dev, "Cannot get gpio dev for open position sensor.\n");
+	// 	goto r_pwmdev;
+	// }
+
+	// gpio_sensor_closed = gpiod_get_index(hatch2sr_dev.dev, "sensor", CLOSED_POSITION_SENSOR_IDX, GPIOD_IN);
+	// if (IS_ERR(gpio_sensor_closed)) {
+	// 	dev_err(hatch2sr_dev.dev, "Cannot get gpio dev for closed position sensor.\n");
+	// 	goto r_openposdev;
+	// }
+
+	gpio_sensor_open = gpiod_get(hatch2sr_dev.dev, "openpossensor", GPIOD_IN);
 	if (IS_ERR(gpio_sensor_open)) {
 		dev_err(hatch2sr_dev.dev, "Cannot get gpio dev for open position sensor.\n");
 		goto r_pwmdev;
 	}
 
-	gpio_sensor_closed = gpiod_get_index(hatch2sr_dev.dev, NULL, CLOSED_POSITION_SENSOR_IDX, GPIOD_IN);
+	gpio_sensor_closed = gpiod_get(hatch2sr_dev.dev, "closepossensor", GPIOD_IN);
 	if (IS_ERR(gpio_sensor_closed)) {
 		dev_err(hatch2sr_dev.dev, "Cannot get gpio dev for closed position sensor.\n");
 		goto r_openposdev;
 	}
 
-	// gpio_relay = gpiod_get_index(hatch2sr_dev.dev, NULL, RELAY_POSITION_SENSOR_IDX, GPIOD_OUT_HIGH); //TODO: Should it be out_low?????
-	// if (IS_ERR(gpio_relay)) {
-	// 	dev_err(hatch2sr_dev.dev, "Cannot get gpio dev for relayr.\n");
-	// 	goto r_closedposdev;
-	// }
+	gpio_relay = gpiod_get(hatch2sr_dev.dev, "relay", GPIOD_OUT_HIGH); //TODO: Should it be out_low?????
+	if (IS_ERR(gpio_relay)) {
+		dev_err(hatch2sr_dev.dev, "Cannot get gpio dev for relayr.\n");
+		goto r_closedposdev;
+	}
 
-	// if (hatch2sr_init(pwm_dev, gpio_sensor_open, gpio_sensor_closed, gpio_relay)) {
-	// 	dev_err(hatch2sr_dev.dev, "Cannot initialize logic for hatch2sr driver.\n");
-	// 	goto r_relaydev;
-	// }
+	if (hatch2sr_init(pwm_dev, gpio_sensor_open, gpio_sensor_closed, gpio_relay)) {
+		dev_err(hatch2sr_dev.dev, "Cannot initialize logic for hatch2sr driver.\n");
+		goto r_relaydev;
+	}
 
 	//Initialize driver logic	
 	pr_info("Hatch2sr Kernel Module probed successfully test...\n");
@@ -295,7 +309,7 @@ module_platform_driver(hatch2sr_driver);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Patryk Biel");
 MODULE_DESCRIPTION("Driver used to control hatch through 8-pin relay.");
-MODULE_VERSION("1:0.0");
+MODULE_VERSION("1:0.1");
 
 /**
  * 

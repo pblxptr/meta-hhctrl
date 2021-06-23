@@ -5,7 +5,15 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=12f884d2ae1ff87c09e5b7ccc2c4ca7e"
 inherit module
 
 SRC_URI = "file://Makefile \
-           file://hatch2sr.c \
+           file://hatch2sr.h \
+           file://engine.h \
+           file://sensor.h \
+           file://relay.h \
+           file://hatch2sr_driver.c \
+           file://hatch2sr_b.c \
+           file://engine.c \
+           file://sensor.c \
+           file://relay.c \
            file://COPYING \
           "
 
