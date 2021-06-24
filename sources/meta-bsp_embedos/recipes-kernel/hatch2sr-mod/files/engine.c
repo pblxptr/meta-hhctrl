@@ -5,7 +5,8 @@ void engine_init(engine* engine, struct pwm_device* pwm)
   engine->pwm = pwm;
   engine->state = ENGINE_STATE_IDLE;
 
-	pwm_config(engine->pwm, ENGINE_PWM_INITIAL_DUTY, ENGINE_PWM_PERIOD_NS);
+	pwm_config(engine->pwm, 2000000, ENGINE_PWM_PERIOD_NS);
+  pwm_enable(engine->pwm);
 }
 
 void engine_deinit(engine* engine)

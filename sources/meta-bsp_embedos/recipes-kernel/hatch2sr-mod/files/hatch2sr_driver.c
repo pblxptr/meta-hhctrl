@@ -274,12 +274,12 @@ static int hatch2sr_driver_remove(struct platform_device *pdev)
 {
 	printk("%s\n", __FUNCTION__);
 
-	// device_destroy(hatch2sr_dev.dev->class, hatch2sr_dev.num);
-	// class_destroy(hatch2sr_dev.dev->class);
-	// cdev_del(&hatch2sr_dev.cdev);
-	// unregister_chrdev_region(hatch2sr_dev.num, DEV_COUNT);
+	device_destroy(hatch2sr_dev.dev->class, hatch2sr_dev.num);
+	class_destroy(hatch2sr_dev.dev->class);
+	cdev_del(&hatch2sr_dev.cdev);
+	unregister_chrdev_region(hatch2sr_dev.num, DEV_COUNT);
 
-	// hatch2sr_deinit();
+	hatch2sr_deinit();
 
 	pr_info("Hatch2sr Kernel Module removed successfully...\n");
 
