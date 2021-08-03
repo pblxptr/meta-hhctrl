@@ -99,5 +99,5 @@ TEST_F(Hatch2srGeneralTest, WhenBothSensorsIndicateActiveStateThenHatchShouldInd
   const auto state = hatch2sr_get_state();
   
   //Assert 
-  ASSERT_EQ(state, HATCH_STATE_FAULTY);
+  ASSERT_EQ(state, HATCH_STATUS_FAULTY);
 }

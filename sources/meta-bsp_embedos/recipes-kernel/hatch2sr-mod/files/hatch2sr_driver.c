@@ -36,7 +36,7 @@
 
 #include "sensor.h"
 #include "engine.h"
-#include "hatch2sr.h"
+#include "hatch2sr_ctrl.h"
 
 
 #define EN_DEBOUNCE
@@ -113,7 +113,22 @@ static const struct attribute_group* hatch2sr_groups[] = {
 */
 ssize_t hatch2sr_show_attr_status(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	return 0;
+	const hatch_status status = hatch2sr_get_status();
+	const char* pattern = "%s\n";
+
+	pr_info("hatch2sr_show_attr_status\n");
+
+	if (status == HATCH_STATUS_OPEN) {
+		return sprintf(buf, pattern, "open");
+	} else if (status == HATCH_STATUS_CLOSED) {
+		return sprintf(buf, pattern, "closed");
+	} else if (status == HATCH_STATUS_CHANGING_POSITION) {
+		return sprintf(buf, pattern, "changing_position");
+	} else if (status == HATCH_STATUS_FAULTY) {
+		return sprintf(buf, pattern, "faulty");
+	} else {
+		return sprintf(buf, pattern, "undefined");
+	}
 }
 
 /*

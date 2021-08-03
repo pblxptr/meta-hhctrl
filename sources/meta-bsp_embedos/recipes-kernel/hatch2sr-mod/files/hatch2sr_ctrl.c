@@ -1,4 +1,4 @@
-#include "hatch2sr.h"
+#include "hatch2sr_ctrl.h"
 
 #include <stddef.h>
 #include <linux/gpio.h>
@@ -95,7 +95,7 @@ void hatch2sr_close()
   engine_start(&hatch.engine);
 }
 
-hatch_state hatch2sr_get_state()
+hatch_status hatch2sr_get_status()
 {
   int open_sensor_val;
   int closed_sensor_val;
@@ -106,16 +106,18 @@ hatch_state hatch2sr_get_state()
   engine_s = engine_get_state(&hatch.engine);
 
   if (is_faulty()) {
-    return HATCH_STATE_FAULTY;
+    return HATCH_STATUS_FAULTY;
   }
   if (is_changing_position()) {
-    return HATCH_STATE_CHANGING_POSITION;
+    return HATCH_STATUS_CHANGING_POSITION;
   }
 
   if (open_sensor_val) {
-    return HATCH_STATE_OPEN;
+    return HATCH_STATUS_OPEN;
+  } else if (closed_sensor_val) {
+    return HATCH_STATUS_CLOSED;
   } else {
-    return HATCH_STATE_CLOSED;
+    return HATCH_STATUS_UNDEFINED;
   }
 }
 

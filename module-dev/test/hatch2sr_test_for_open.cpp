@@ -50,5 +50,5 @@ TEST_F(Hatch2srTestForOpen, WhenOpenSensorStateIsActiveThenHatchStateShouldIndic
   const auto state = hatch2sr_get_state();
 
   //Assert
-  ASSERT_EQ(state, HATCH_STATE_OPEN);
+  ASSERT_EQ(state, HATCH_STATUS_OPEN);
 }

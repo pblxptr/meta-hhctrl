@@ -8,12 +8,13 @@
 #include "sensor.h"
 #include "relay.h"
 
-typedef enum hatch_state {
-  HATCH_STATE_OPEN,
-  HATCH_STATE_CLOSED,
-  HATCH_STATE_CHANGING_POSITION,
-  HATCH_STATE_FAULTY
-} hatch_state; 
+typedef enum hatch_status {
+  HATCH_STATUS_OPEN,
+  HATCH_STATUS_CLOSED,
+  HATCH_STATUS_CHANGING_POSITION,
+  HATCH_STATUS_FAULTY,
+  HATCH_STATUS_UNDEFINED
+} hatch_status; 
 
 typedef struct hatch2sr {
   struct engine engine;
@@ -27,4 +28,4 @@ void hatch2sr_deinit(void);
 hatch2sr* hatch2sr_get(void);
 void hatch2sr_open(void);
 void hatch2sr_close(void);
-hatch_state hatch2sr_get_state(void);
+hatch_status hatch2sr_get_status(void);
