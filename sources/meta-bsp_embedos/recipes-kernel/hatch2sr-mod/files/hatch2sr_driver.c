@@ -228,18 +228,6 @@ static int hatch2sr_driver_probe(struct platform_device* pdev)
 		goto r_device;
 	}
 	
-	// gpio_sensor_open = gpiod_get_index(hatch2sr_dev.dev, "sensor", OPEN_POSITION_SENSOR_IDX, GPIOD_IN);
-	// if (IS_ERR(gpio_sensor_open)) {
-	// 	dev_err(hatch2sr_dev.dev, "Cannot get gpio dev for open position sensor.\n");
-	// 	goto r_pwmdev;
-	// }
-
-	// gpio_sensor_closed = gpiod_get_index(hatch2sr_dev.dev, "sensor", CLOSED_POSITION_SENSOR_IDX, GPIOD_IN);
-	// if (IS_ERR(gpio_sensor_closed)) {
-	// 	dev_err(hatch2sr_dev.dev, "Cannot get gpio dev for closed position sensor.\n");
-	// 	goto r_openposdev;
-	// }
-
 	gpio_sensor_open = gpiod_get(hatch2sr_dev.dev, "openpossensor", GPIOD_IN);
 	if (IS_ERR(gpio_sensor_open)) {
 		dev_err(hatch2sr_dev.dev, "Cannot get gpio dev for open position sensor.\n");
