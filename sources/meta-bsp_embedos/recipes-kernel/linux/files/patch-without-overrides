@@ -25,7 +25,7 @@ index 000000000000..bf56291f2fb4
 +      
 +        openpossensor-gpios  = <&gpio 23 1>;
 +        closepossensor-gpios = <&gpio 24 1>;
-+        relay-gpios =          <&gpio 4  1>;
++        relay-gpios =          <&gpio 25  1>;
 +  };
 +};
 \ No newline at end of file

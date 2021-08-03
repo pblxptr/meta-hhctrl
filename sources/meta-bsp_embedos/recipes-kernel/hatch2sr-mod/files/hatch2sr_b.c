@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <linux/gpio.h>
 #include <linux/interrupt.h>
+#include <linux/printk.h>
 #include <stdbool.h>
 
 #include "engine.h"
@@ -11,8 +12,16 @@
 
 //TODO: Make dependencies null
 
+#define EN_DEBOUNCE
+
+#ifdef EN_DEBOUNCE
+#include <linux/jiffies.h>
+extern unsigned long volatile jiffies;
+#endif
+
 /* Hatch private functions declarations */
-static irqreturn_t sensor_isr(int irq, void* dev_id);
+static irqreturn_t openpos_sensor_isr(int irq, void* dev_id);
+static irqreturn_t closedpos_sensor_isr(int irq, void* dev_id);
 static bool can_change_position(void);
 static bool is_changing_position(void);
 static bool is_faulty(void); 
@@ -29,11 +38,11 @@ int hatch2sr_init(struct pwm_device* pwm, struct gpio_desc* openpos, struct  gpi
   engine_init(&hatch.engine, pwm);
 
   //Initialize sensors
-  if (sensor_init(&hatch.openpos, openpos, sensor_isr)) {
+  if (sensor_init(&hatch.openpos, openpos, openpos_sensor_isr)) {
     return -1;
   }
 
-  if (sensor_init(&hatch.closedpos, closedpos, sensor_isr)) {
+  if (sensor_init(&hatch.closedpos, closedpos, closedpos_sensor_isr)) {
     return -1;
   }
 
@@ -110,9 +119,43 @@ hatch_state hatch2sr_get_state()
   }
 }
 
+//TODO: Isr have the same body, perhaps but them into single ISR?
 /* Hatch private function declarations */
-irqreturn_t sensor_isr(int irq, void* dev_id)
+irqreturn_t openpos_sensor_isr(int irq, void* dev_id)
 {
+	#ifdef EN_DEBOUNCE
+  static unsigned long old_jiffie = 0;
+  unsigned long diff = jiffies - old_jiffie;
+  if (diff < 100)
+  {
+    return IRQ_HANDLED;
+  }
+  
+  old_jiffie = jiffies;
+	#endif  
+
+  pr_info("Open Sensor isr: %d\n", irq);
+
+  engine_stop(&hatch.engine);
+
+	return IRQ_HANDLED;	
+}
+
+irqreturn_t closedpos_sensor_isr(int irq, void* dev_id)
+{
+	#ifdef EN_DEBOUNCE
+  static unsigned long old_jiffie = 0;
+  unsigned long diff = jiffies - old_jiffie;
+  if (diff < 100)
+  {
+    return IRQ_HANDLED;
+  }
+  
+  old_jiffie = jiffies;
+	#endif  
+
+  pr_info("Closed Sensor isr: %d\n", irq);
+
   engine_stop(&hatch.engine);
 
 	return IRQ_HANDLED;	

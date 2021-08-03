@@ -18,13 +18,13 @@ index 000000000000..bf56291f2fb4
 +/plugin/;
 +
 +&soc {
-+    hatch2sr {
++    hatch2sr: hatch2sr {
 +        compatible = "hatch2sr";
 +        pwm-names = "motor1";
 +        pwms  = <&pwm 0 1000000>;
 +      
-+        openpossensor-gpios  = <&gpio 3  1>;
-+        closepossensor-gpios = <&gpio 26 1>;
++        openpossensor-gpios  = <&gpio 23 1>;
++        closepossensor-gpios = <&gpio 24 1>;
 +        relay-gpios =          <&gpio 25 1>;
 +  };
 +    __overrides__ {

@@ -23,9 +23,9 @@ index 000000000000..3034940bd0bb
 +        pwm-names = "motor1";
 +        pwms  = <&pwm 0 1000000>;
 +      
-+        openpossensor-gpios  = <&gpio 23 17>;
-+        closepossensor-gpios = <&gpio 24 17>;
-+        relay-gpios =          <&gpio 25 0>;
++        openpossensor-gpios  = <&gpio 23 1>;
++        closepossensor-gpios = <&gpio 24 1>;
++        relay-gpios =          <&gpio 25 1>;
 +  };
 +};
 +
