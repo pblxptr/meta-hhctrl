@@ -59,6 +59,8 @@ unsigned long old_jiffie = 0;
 */
 ssize_t hatch2sr_show_attr_status(struct device *dev, struct device_attribute *attr, char *buf);
 ssize_t hatch2sr_store_attr_status(struct device *dev, struct device_attribute *attr, const char *buf, size_t count);
+ssize_t hatch2sr_show_attr_open(struct device *dev, struct device_attribute *attr, char *buf);
+ssize_t hatch2sr_store_attr_open(struct device *dev, struct device_attribute *attr, const char *buf, size_t count);
 
 /*
 **	Function prototypes for file operations
@@ -92,9 +94,11 @@ static struct file_operations fops = {
 ** Attributtes 
 */
 static DEVICE_ATTR(status, S_IWUSR | S_IRUGO, hatch2sr_show_attr_status, hatch2sr_store_attr_status);
+static DEVICE_ATTR(open, S_IWUSR | S_IRUGO, hatch2sr_show_attr_open, hatch2sr_store_attr_open);
 
 static struct attribute* hatch2sr_attrs[] = {
 	&dev_attr_status.attr,
+	&dev_attr_open.attr,
 	NULL
 };
 
@@ -139,6 +143,21 @@ ssize_t hatch2sr_store_attr_status(struct device *dev, struct device_attribute *
 	return 0;
 }
 
+/*
+** This function is called when while writing to the open attribute e.g. when user has requested hatch to open.
+*/
+ssize_t hatch2sr_show_attr_open(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return 0;
+}
+
+/*
+** This function is called when while reading the open attribute.
+*/
+ssize_t hatch2sr_store_attr_open(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	return 0;
+}
 
 /* Function definitions for file operations
 ** This function is called when somebody has called open driver file.
