@@ -138,7 +138,7 @@ irqreturn_t openpos_sensor_isr(int irq, void* dev_id)
 
   pr_info("Open Sensor isr: %d\n", irq);
 
-  engine_stop(&hatch.engine);
+  //engine_stop(&hatch.engine); //TODO: Uncomment
 
 	return IRQ_HANDLED;	
 }
@@ -158,7 +158,7 @@ irqreturn_t closedpos_sensor_isr(int irq, void* dev_id)
 
   pr_info("Closed Sensor isr: %d\n", irq);
 
-  engine_stop(&hatch.engine);
+  //engine_stop(&hatch.engine); //TODO: Uncomment
 
 	return IRQ_HANDLED;	
 }

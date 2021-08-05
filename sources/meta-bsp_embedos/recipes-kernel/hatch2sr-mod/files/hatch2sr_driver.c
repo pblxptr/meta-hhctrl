@@ -93,8 +93,8 @@ static struct file_operations fops = {
 /*
 ** Attributtes 
 */
-static DEVICE_ATTR(status, S_IWUSR | S_IRUGO, hatch2sr_show_attr_status, hatch2sr_store_attr_status);
-static DEVICE_ATTR(open, S_IWUSR | S_IRUGO, hatch2sr_show_attr_open, hatch2sr_store_attr_open);
+static DEVICE_ATTR(status, S_IWUSR | S_IRUGO, hatch2sr_show_attr_status, hatch2sr_store_attr_status); //TODO: Change to readonly
+static DEVICE_ATTR(open, S_IWUSR | S_IRUGO, hatch2sr_show_attr_open, hatch2sr_store_attr_open); //Change to writeonly
 
 static struct attribute* hatch2sr_attrs[] = {
 	&dev_attr_status.attr,
@@ -122,16 +122,17 @@ ssize_t hatch2sr_show_attr_status(struct device *dev, struct device_attribute *a
 
 	pr_info("hatch2sr_show_attr_status\n");
 
+	//sysfs_emit is aware of PAGE_SIZE
 	if (status == HATCH_STATUS_OPEN) {
-		return sprintf(buf, pattern, "open");
+		return sysfs_emit(buf, pattern, "open");
 	} else if (status == HATCH_STATUS_CLOSED) {
-		return sprintf(buf, pattern, "closed");
+		return sysfs_emit(buf, pattern, "closed");
 	} else if (status == HATCH_STATUS_CHANGING_POSITION) {
-		return sprintf(buf, pattern, "changing_position");
+		return sysfs_emit(buf, pattern, "changing_position");
 	} else if (status == HATCH_STATUS_FAULTY) {
-		return sprintf(buf, pattern, "faulty");
+		return sysfs_emit(buf, pattern, "faulty");
 	} else {
-		return sprintf(buf, pattern, "undefined");
+		return sysfs_emit(buf, pattern, "undefined");
 	}
 }
 
@@ -296,12 +297,12 @@ static int hatch2sr_driver_remove(struct platform_device *pdev)
 {
 	printk("%s\n", __FUNCTION__);
 
+	hatch2sr_deinit();
+
 	device_destroy(hatch2sr_dev.dev->class, hatch2sr_dev.num);
 	class_destroy(hatch2sr_dev.dev->class);
 	cdev_del(&hatch2sr_dev.cdev);
 	unregister_chrdev_region(hatch2sr_dev.num, DEV_COUNT);
-
-	hatch2sr_deinit();
 
 	pr_info("Hatch2sr Kernel Module removed successfully...\n");
 

@@ -3,7 +3,7 @@
 #include <linux/pwm.h>
 #include <stdbool.h>
 
-#define EIGINE_MIN_SPEED_PCT    (30)
+#define EIGINE_MIN_SPEED_PCT    (15)
 #define ENGINE_MAX_SPEED_PCT    (100)
 #define ENGINE_PWM_PERIOD_NS    (10000000)
 #define ENGINE_PWM_INITIAL_DUTY (0)
