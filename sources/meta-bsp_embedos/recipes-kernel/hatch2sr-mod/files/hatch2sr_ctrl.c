@@ -129,7 +129,7 @@ hatch_status hatch2sr_get_status()
 /* Hatch private function declarations */
 irqreturn_t openpos_sensor_isr(int irq, void* dev_id)
 {
-	#ifdef EN_DEBOUNCE
+  #ifdef EN_DEBOUNCE
   static unsigned long old_jiffie = 0;
   unsigned long diff = jiffies - old_jiffie;
   if (diff < 100)
@@ -138,7 +138,7 @@ irqreturn_t openpos_sensor_isr(int irq, void* dev_id)
   }
 
   old_jiffie = jiffies;
-	#endif
+  #endif
 
   pr_info("Open Sensor isr: %d\n", irq);
 
@@ -149,7 +149,7 @@ irqreturn_t openpos_sensor_isr(int irq, void* dev_id)
 
 irqreturn_t closedpos_sensor_isr(int irq, void* dev_id)
 {
-	#ifdef EN_DEBOUNCE
+  #ifdef EN_DEBOUNCE
   static unsigned long old_jiffie = 0;
   unsigned long diff = jiffies - old_jiffie;
   if (diff < 100)
@@ -158,13 +158,13 @@ irqreturn_t closedpos_sensor_isr(int irq, void* dev_id)
   }
 
   old_jiffie = jiffies;
-	#endif
+  #endif
 
   pr_info("Closed Sensor isr: %d\n", irq);
 
   engine_stop(&hatch.engine);
 
-	return IRQ_HANDLED;
+  return IRQ_HANDLED;
 }
 
 bool can_change_position(void)
