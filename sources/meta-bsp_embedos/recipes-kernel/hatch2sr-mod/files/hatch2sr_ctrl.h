@@ -18,8 +18,8 @@ typedef enum hatch_status {
 
 typedef struct hatch2sr {
   engine_t engine;
-  struct sensor openpos;
-  struct sensor closedpos;
+  sensor_t openpos;
+  sensor_t closedpos;
   struct relay relay;
 } hatch2sr;
 

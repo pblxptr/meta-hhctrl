@@ -4,7 +4,7 @@
 
 //TODO: Make dependencies null
 
-int sensor_init(sensor* sensor, struct gpio_desc* gpio, irq_handler_t irqhandler)
+int sensor_init(sensor_t* sensor, struct gpio_desc* gpio, irq_handler_t irqhandler)
 {
   sensor->gpio = gpio;
 	sensor->gpio_id = desc_to_gpio(sensor->gpio);
@@ -22,13 +22,13 @@ int sensor_init(sensor* sensor, struct gpio_desc* gpio, irq_handler_t irqhandler
   return 0;
 }
 
-void sensor_deinit(sensor* sensor)
+void sensor_deinit(sensor_t* sensor)
 {
 	free_irq(sensor->irq, NULL);
 	gpiod_unexport(sensor->gpio);
 }
 
-int sensor_get_value(sensor* sensor)
+int sensor_get_value(sensor_t* sensor)
 {
   return gpiod_get_value(sensor->gpio);
 }
