@@ -93,8 +93,8 @@ static struct file_operations fops = {
 /*
 ** Attributtes 
 */
-static DEVICE_ATTR(status, S_IWUSR | S_IRUGO, hatch2sr_show_attr_status, hatch2sr_store_attr_status); //TODO: Change to readonly
-static DEVICE_ATTR(open, S_IWUSR | S_IRUGO, hatch2sr_show_attr_open, hatch2sr_store_attr_open); //Change to writeonly
+static DEVICE_ATTR(status, S_IRUGO, hatch2sr_show_attr_status, NULL);
+static DEVICE_ATTR(open, S_IWUSR, NULL, hatch2sr_store_attr_open);
 
 static struct attribute* hatch2sr_attrs[] = {
 	&dev_attr_status.attr,
