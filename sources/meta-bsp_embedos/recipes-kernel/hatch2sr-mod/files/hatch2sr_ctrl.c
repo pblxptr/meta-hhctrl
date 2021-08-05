@@ -69,6 +69,8 @@ hatch2sr* hatch2sr_get()
 
 void hatch2sr_open()
 {
+  pr_info("%s\n", __FUNCTION__);
+
   if (sensor_get_value(&hatch.openpos)) {
     return;
   }
@@ -83,6 +85,8 @@ void hatch2sr_open()
 
 void hatch2sr_close()
 {
+  pr_info("%s\n", __FUNCTION__);
+
   if (sensor_get_value(&hatch.closedpos)) {
     return;
   }
@@ -138,7 +142,7 @@ irqreturn_t openpos_sensor_isr(int irq, void* dev_id)
 
   pr_info("Open Sensor isr: %d\n", irq);
 
-  //engine_stop(&hatch.engine); //TODO: Uncomment
+  engine_stop(&hatch.engine);
 
 	return IRQ_HANDLED;	
 }
@@ -158,14 +162,20 @@ irqreturn_t closedpos_sensor_isr(int irq, void* dev_id)
 
   pr_info("Closed Sensor isr: %d\n", irq);
 
-  //engine_stop(&hatch.engine); //TODO: Uncomment
+  engine_stop(&hatch.engine);
 
 	return IRQ_HANDLED;	
 }
 
 bool can_change_position(void)
 {
-  return !is_changing_position() && !is_faulty();
+  hatch_status status;
+  
+  status = hatch2sr_get_status();
+
+  return status != HATCH_STATUS_CHANGING_POSITION
+    && status != HATCH_STATUS_FAULTY
+    && status != HATCH_STATUS_UNDEFINED;
 }
 
 bool is_changing_position(void)

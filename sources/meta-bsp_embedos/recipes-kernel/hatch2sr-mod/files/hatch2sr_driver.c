@@ -58,9 +58,7 @@ unsigned long old_jiffie = 0;
 ** Function prototypes for attributes
 */
 ssize_t hatch2sr_show_attr_status(struct device *dev, struct device_attribute *attr, char *buf);
-ssize_t hatch2sr_store_attr_status(struct device *dev, struct device_attribute *attr, const char *buf, size_t count);
-ssize_t hatch2sr_show_attr_open(struct device *dev, struct device_attribute *attr, char *buf);
-ssize_t hatch2sr_store_attr_open(struct device *dev, struct device_attribute *attr, const char *buf, size_t count);
+ssize_t hatch2sr_store_attr_change_positon(struct device *dev, struct device_attribute *attr, const char *buf, size_t count);
 
 /*
 **	Function prototypes for file operations
@@ -93,12 +91,18 @@ static struct file_operations fops = {
 /*
 ** Attributtes 
 */
-static DEVICE_ATTR(status, S_IRUGO, hatch2sr_show_attr_status, NULL);
-static DEVICE_ATTR(open, S_IWUSR, NULL, hatch2sr_store_attr_open);
+static DEVICE_ATTR(status, S_IRUGO, 
+	hatch2sr_show_attr_status, 
+	NULL
+);
+static DEVICE_ATTR(change_positon, S_IWUSR, 
+	NULL, 
+	hatch2sr_store_attr_change_positon
+);
 
 static struct attribute* hatch2sr_attrs[] = {
 	&dev_attr_status.attr,
-	&dev_attr_open.attr,
+	&dev_attr_change_positon.attr,
 	NULL
 };
 
@@ -111,7 +115,6 @@ static const struct attribute_group* hatch2sr_groups[] = {
 	NULL
 };
 
-
 /* Function definitions for attributes
 ** This function is called when somebody reads the status attribute.
 */
@@ -120,7 +123,7 @@ ssize_t hatch2sr_show_attr_status(struct device *dev, struct device_attribute *a
 	const hatch_status status = hatch2sr_get_status();
 	const char* pattern = "%s\n";
 
-	pr_info("hatch2sr_show_attr_status\n");
+	pr_info("%s\n", __FUNCTION__);
 
 	//sysfs_emit is aware of PAGE_SIZE
 	if (status == HATCH_STATUS_OPEN) {
@@ -137,27 +140,26 @@ ssize_t hatch2sr_show_attr_status(struct device *dev, struct device_attribute *a
 }
 
 /*
-** This function is called when somebody writes the status attribute.
-*/
-ssize_t hatch2sr_store_attr_status(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
-{
-	return 0;
-}
-
-/*
-** This function is called when while writing to the open attribute e.g. when user has requested hatch to open.
-*/
-ssize_t hatch2sr_show_attr_open(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	return 0;
-}
-
-/*
 ** This function is called when while reading the open attribute.
 */
-ssize_t hatch2sr_store_attr_open(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+ssize_t hatch2sr_store_attr_change_positon(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
-	return 0;
+	char value[16] = {0};
+	int ret = 0;
+
+	pr_info("%s\n", __FUNCTION__);
+
+	ret = snprintf(value, sizeof(value), "%s", buf);
+
+	if (sysfs_streq(buf, "open")) {
+		hatch2sr_open();
+	} else if (sysfs_streq(buf, "close")) {
+		hatch2sr_close();
+	} else {
+		return -EINVAL;
+	}
+
+	return count;
 }
 
 /* Function definitions for file operations
@@ -165,7 +167,7 @@ ssize_t hatch2sr_store_attr_open(struct device *dev, struct device_attribute *at
 */
 static int	hatch2sr_fop_open(struct inode* inode, struct file* file)
 {
-	printk("%s\n", __FUNCTION__);
+	pr_info("%s\n", __FUNCTION__);
 
 	return 0;
 }
