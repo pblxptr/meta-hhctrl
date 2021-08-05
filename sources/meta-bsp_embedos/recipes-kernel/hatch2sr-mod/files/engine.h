@@ -16,6 +16,8 @@ typedef enum engine_state {
 typedef struct engine {
   struct pwm_device* pwm;
   engine_state state;
+  bool slow_start;
+  int speed;
 } engine;
 
 void engine_init(engine* enigne, struct pwm_device* pwm);
