@@ -24,7 +24,7 @@ static irqreturn_t openpos_sensor_isr(int irq, void* dev_id);
 static irqreturn_t closedpos_sensor_isr(int irq, void* dev_id);
 static bool can_change_position(void);
 static bool is_changing_position(void);
-static bool is_faulty(void); 
+static bool is_faulty(void);
 
 static hatch2sr hatch;
 
@@ -136,15 +136,15 @@ irqreturn_t openpos_sensor_isr(int irq, void* dev_id)
   {
     return IRQ_HANDLED;
   }
-  
+
   old_jiffie = jiffies;
-	#endif  
+	#endif
 
   pr_info("Open Sensor isr: %d\n", irq);
 
   engine_stop(&hatch.engine);
 
-	return IRQ_HANDLED;	
+	return IRQ_HANDLED;
 }
 
 irqreturn_t closedpos_sensor_isr(int irq, void* dev_id)
@@ -156,21 +156,21 @@ irqreturn_t closedpos_sensor_isr(int irq, void* dev_id)
   {
     return IRQ_HANDLED;
   }
-  
+
   old_jiffie = jiffies;
-	#endif  
+	#endif
 
   pr_info("Closed Sensor isr: %d\n", irq);
 
   engine_stop(&hatch.engine);
 
-	return IRQ_HANDLED;	
+	return IRQ_HANDLED;
 }
 
 bool can_change_position(void)
 {
   hatch_status status;
-  
+
   status = hatch2sr_get_status();
 
   return status != HATCH_STATUS_CHANGING_POSITION

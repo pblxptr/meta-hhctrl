@@ -69,7 +69,7 @@ static ssize_t hatch2sr_fop_read(struct file*, char __user*, size_t, loff_t*);
 static ssize_t hatch2sr_fop_write(struct file*, const char __user*, size_t, loff_t*);
 
 /*
-** Driver struct 
+** Driver struct
 */
 struct hatch2sr_device {
 	dev_t num;
@@ -79,7 +79,7 @@ struct hatch2sr_device {
 
 /*
 ** File operations
-*/ 
+*/
 static struct file_operations fops = {
 	.owner = 		THIS_MODULE,
 	.open = 		hatch2sr_fop_open,
@@ -89,14 +89,14 @@ static struct file_operations fops = {
 };
 
 /*
-** Attributtes 
+** Attributtes
 */
-static DEVICE_ATTR(status, S_IRUGO, 
-	hatch2sr_show_attr_status, 
+static DEVICE_ATTR(status, S_IRUGO,
+	hatch2sr_show_attr_status,
 	NULL
 );
-static DEVICE_ATTR(change_positon, S_IWUSR, 
-	NULL, 
+static DEVICE_ATTR(change_positon, S_IWUSR,
+	NULL,
 	hatch2sr_store_attr_change_positon
 );
 
@@ -213,7 +213,7 @@ static int hatch2sr_driver_probe(struct platform_device* pdev)
 
 	pr_info("Hello driver loaded.\n");
 
-	// Allocate Major number 
+	// Allocate Major number
 	if (alloc_chrdev_region(&hatch2sr_dev.num, DEV_BASE_MINOR, DEV_COUNT, "hatch2sr") < 0) {
 		dev_err(hatch2sr_dev.dev, "Cannot allocate major number for device.\n");
 		return -1;
@@ -229,7 +229,7 @@ static int hatch2sr_driver_probe(struct platform_device* pdev)
 			goto r_cdev;
 		}
 
-	//Create device class 
+	//Create device class
 	if ((hatch2sr_dev.dev->class = class_create(THIS_MODULE, "hatch2sr")) == NULL){ // unregister_chrdev_region + cdev_del
 			dev_err(hatch2sr_dev.dev, "Cannot create the struct class for device\n");
 			goto r_class;
@@ -249,7 +249,7 @@ static int hatch2sr_driver_probe(struct platform_device* pdev)
 		dev_err(hatch2sr_dev.dev, "Cannot get pwm dev for engine.\n");
 		goto r_device;
 	}
-	
+
 	gpio_sensor_open = gpiod_get(hatch2sr_dev.dev, "openpossensor", GPIOD_IN);
 	if (IS_ERR(gpio_sensor_open)) {
 		dev_err(hatch2sr_dev.dev, "Cannot get gpio dev for open position sensor.\n");
@@ -273,7 +273,7 @@ static int hatch2sr_driver_probe(struct platform_device* pdev)
 		goto r_relaydev;
 	}
 
-	//Initialize driver logic	
+	//Initialize driver logic
 	pr_info("Hatch2sr Kernel Module probed successfully test...\n");
 
 	return 0;
@@ -281,17 +281,17 @@ static int hatch2sr_driver_probe(struct platform_device* pdev)
 	r_relaydev:
 		gpiod_put(gpio_relay);
 	r_closedposdev:
-		gpiod_put(gpio_sensor_closed);	
+		gpiod_put(gpio_sensor_closed);
 	r_openposdev:
 		gpiod_put(gpio_sensor_open);
 	r_pwmdev:
 		pwm_put(pwm_dev);
 	r_device:
-		class_destroy(hatch2sr_dev.dev->class);	
+		class_destroy(hatch2sr_dev.dev->class);
 	r_class:
-		cdev_del(&hatch2sr_dev.cdev);	
-	r_cdev: 
-		unregister_chrdev_region(hatch2sr_dev.num, DEV_COUNT);	
+		cdev_del(&hatch2sr_dev.cdev);
+	r_cdev:
+		unregister_chrdev_region(hatch2sr_dev.num, DEV_COUNT);
 		return -1;
 }
 
@@ -337,14 +337,14 @@ MODULE_DESCRIPTION("Driver used to control hatch through 8-pin relay.");
 MODULE_VERSION("1:0.1");
 
 /**
- * 
+ *
  * Hatch functions:
- * 	- open 
+ * 	- open
  *  - close
  *  - status
  * 		- attributes: status
  * 		- values: closed | open | changing_position | faulty
- * 
+ *
  * Engine functions:
  * 	- start
  * 	- stop
@@ -352,18 +352,18 @@ MODULE_VERSION("1:0.1");
  * 		- attribute: speed
  *  - get_speed
  * 		- attribute: speed
- * 
+ *
  * Sensor functions:
- *  - get_status 
+ *  - get_status
  *  	- attributes: open_pos_status | closed_pos_status
  *    - values: open | closed
- *   
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
  */

@@ -13,9 +13,9 @@ int sensor_init(sensor* sensor, struct gpio_desc* gpio, irq_handler_t irqhandler
 	gpiod_direction_input(sensor->gpio);
 	gpiod_export(sensor->gpio, false);
 
-	if (request_irq(sensor->irq, irqhandler, IRQF_TRIGGER_FALLING, 
+	if (request_irq(sensor->irq, irqhandler, IRQF_TRIGGER_FALLING,
 			"hatch2sr.", NULL)) //TODO: Should it be null or func ptr?
-	{	
+	{
     return -1;
 	}
 

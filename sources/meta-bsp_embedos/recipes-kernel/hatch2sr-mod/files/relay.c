@@ -19,7 +19,7 @@ int relay_init(relay* relay, struct gpio_desc* gpio)
 
 void relay_deinit(relay* relay)
 {
-  gpiod_set_value(relay->gpio, DEFAULT_STATE);  
+  gpiod_set_value(relay->gpio, DEFAULT_STATE);
 	gpiod_unexport(relay->gpio);
 }
 

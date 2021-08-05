@@ -14,7 +14,7 @@ typedef enum hatch_status {
   HATCH_STATUS_CHANGING_POSITION,
   HATCH_STATUS_FAULTY,
   HATCH_STATUS_UNDEFINED
-} hatch_status; 
+} hatch_status;
 
 typedef struct hatch2sr {
   struct engine engine;

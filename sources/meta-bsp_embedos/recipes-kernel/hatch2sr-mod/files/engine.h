@@ -9,7 +9,7 @@
 #define ENGINE_PWM_INITIAL_DUTY (0)
 
 typedef enum engine_state {
-  ENGINE_STATE_IDLE, 
+  ENGINE_STATE_IDLE,
   ENGINE_STATE_RUNNING
 } engine_state;
 
