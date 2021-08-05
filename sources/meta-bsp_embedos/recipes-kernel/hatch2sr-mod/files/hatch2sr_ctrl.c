@@ -103,7 +103,7 @@ hatch_status hatch2sr_get_status()
 {
   int open_sensor_val;
   int closed_sensor_val;
-  engine_state engine_s;
+  engine_state_t engine_s;
 
   open_sensor_val = sensor_get_value(&hatch.openpos);
   closed_sensor_val = sensor_get_value(&hatch.closedpos);
