@@ -4,6 +4,7 @@
 #include <linux/gpio.h>
 #include <linux/interrupt.h>
 #include <linux/printk.h>
+#include <linux/delay.h>
 #include <stdbool.h>
 
 #include "engine.h"
@@ -80,6 +81,7 @@ void hatch2sr_open()
   }
 
   relay_set_to_open(&hatch.relay);
+  mdelay(300); //TODO: Consider changing mdelay to flag, and run engine in workqueu
   engine_start(&hatch.engine);
 }
 
@@ -96,6 +98,7 @@ void hatch2sr_close()
   }
 
   relay_set_to_close(&hatch.relay);
+  mdelay(300); //TODO: Consider changing mdelay to flag, and run engine in workqueu
   engine_start(&hatch.engine);
 }
 
@@ -123,6 +126,16 @@ hatch_status hatch2sr_get_status()
   } else {
     return HATCH_STATUS_UNDEFINED;
   }
+}
+
+void hatch2sr_engine_set_slow_start(bool slow_start)
+{
+  engine_set_slow_start(&hatch.engine, slow_start);
+}
+
+bool hatch2sr_engine_get_slow_start(void)
+{
+  return engine_get_slow_start(&hatch.engine);
 }
 
 //TODO: Isr have the same body, perhaps but them into single ISR?

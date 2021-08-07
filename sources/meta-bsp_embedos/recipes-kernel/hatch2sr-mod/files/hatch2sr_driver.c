@@ -59,6 +59,8 @@ unsigned long old_jiffie = 0;
 */
 ssize_t hatch2sr_show_attr_status(struct device *dev, struct device_attribute *attr, char *buf);
 ssize_t hatch2sr_store_attr_change_positon(struct device *dev, struct device_attribute *attr, const char *buf, size_t count);
+ssize_t hatch2sr_show_attr_slow_start(struct device *dev, struct device_attribute *attr, char *buf);
+ssize_t hatch2sr_store_attr_slow_start(struct device *dev, struct device_attribute *attr, const char *buf, size_t count);
 
 /*
 **	Function prototypes for file operations
@@ -99,10 +101,15 @@ static DEVICE_ATTR(change_positon, S_IWUSR,
   NULL,
   hatch2sr_store_attr_change_positon
 );
+static DEVICE_ATTR(slow_start, S_IRUGO | S_IWUSR,
+  hatch2sr_show_attr_slow_start,
+  hatch2sr_store_attr_slow_start
+);
 
 static struct attribute* hatch2sr_attrs[] = {
   &dev_attr_status.attr,
   &dev_attr_change_positon.attr,
+  &dev_attr_slow_start.attr,
   NULL
 };
 
@@ -140,17 +147,10 @@ ssize_t hatch2sr_show_attr_status(struct device *dev, struct device_attribute *a
 }
 
 /*
-** This function is called when while reading the open attribute.
+** This function is called while reading the open attribute.
 */
 ssize_t hatch2sr_store_attr_change_positon(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
-  char value[16] = {0};
-  int ret = 0;
-
-  pr_info("%s\n", __FUNCTION__);
-
-  ret = snprintf(value, sizeof(value), "%s", buf);
-
   if (sysfs_streq(buf, "open")) {
     hatch2sr_open();
   } else if (sysfs_streq(buf, "close")) {
@@ -161,6 +161,39 @@ ssize_t hatch2sr_store_attr_change_positon(struct device *dev, struct device_att
 
   return count;
 }
+
+/*
+** This function is called while reading the slow_start attribute.
+*/
+ssize_t hatch2sr_show_attr_slow_start(struct device *dev, struct device_attribute *attr, char *buf)
+{
+  bool slow_start;
+
+  slow_start = hatch2sr_engine_get_slow_start();
+
+  if (slow_start) {
+    return sysfs_emit(buf, "%s\n", "1");
+  } else {
+    return sysfs_emit(buf, "%s\n", "0");
+  }
+}
+
+/*
+** This function is called while writing to the slow_start attribute.
+*/
+ssize_t hatch2sr_store_attr_slow_start(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+  if (sysfs_streq(buf, "1")) {
+    hatch2sr_engine_set_slow_start(true);
+  } else if (sysfs_streq(buf, "0")) {
+    hatch2sr_engine_set_slow_start(false);
+  } else {
+    return -EINVAL;
+  }
+
+  return count;
+}
+
 
 /* Function definitions for file operations
 ** This function is called when somebody has called open driver file.

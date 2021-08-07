@@ -29,3 +29,5 @@ hatch2sr* hatch2sr_get(void);
 void hatch2sr_open(void);
 void hatch2sr_close(void);
 hatch_status hatch2sr_get_status(void);
+void hatch2sr_engine_set_slow_start(bool slow_start);
+bool hatch2sr_engine_get_slow_start(void);

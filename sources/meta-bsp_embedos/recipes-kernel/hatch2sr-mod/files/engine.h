@@ -22,3 +22,5 @@ void engine_deinit(engine_t* engine);
 void engine_start(engine_t* engine);
 void engine_stop(engine_t* engine);
 engine_state_t engine_get_state(engine_t* engine);
+void engine_set_slow_start(engine_t* engine, bool slow_start);
+bool engine_get_slow_start(engine_t* engine);
