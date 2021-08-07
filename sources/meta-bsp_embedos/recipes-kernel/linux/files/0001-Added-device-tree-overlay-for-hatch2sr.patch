@@ -21,7 +21,7 @@ index 000000000000..3034940bd0bb
 +    hatch2sr: hatch2sr {
 +        compatible = "hatch2sr";
 +        pwm-names = "motor1";
-+        pwms  = <&pwm 0 1000000>;
++        pwms  = <&pwm 0 10000000>;
 +      
 +        openpossensor-gpios  = <&gpio 23 17>;
 +        closepossensor-gpios = <&gpio 24 17>;
