@@ -259,20 +259,20 @@ static int hatch2sr_driver_probe(struct platform_device* pdev)
   //Add character device
   if ((cdev_add(&hatch2sr_dev.cdev, hatch2sr_dev.num, DEV_COUNT)) < 0){
       dev_err(hatch2sr_dev.dev, "Cannot add the device to the system\n");
-      goto r_cdev;
+      goto r_cdev_err;
     }
 
   //Create device class
   if ((hatch2sr_dev.dev->class = class_create(THIS_MODULE, "hatch2sr")) == NULL){ // unregister_chrdev_region + cdev_del
       dev_err(hatch2sr_dev.dev, "Cannot create the struct class for device\n");
-      goto r_class;
+      goto r_class_err;
   }
   hatch2sr_dev.dev->class->dev_groups = hatch2sr_groups;
 
   //Create device nodes
   if ((device_create(hatch2sr_dev.dev->class, NULL, hatch2sr_dev.num, NULL, "hatch2sr")) == NULL) {  // unregister_chrdev_region + cdev_del + class_destroy
       dev_err(hatch2sr_dev.dev, "Cannot create the Device\n");
-      goto r_device;
+      goto r_device_err;
   }
 
   //Configure peripherals
@@ -280,30 +280,30 @@ static int hatch2sr_driver_probe(struct platform_device* pdev)
 
   if (IS_ERR(pwm_dev)) {
     dev_err(hatch2sr_dev.dev, "Cannot get pwm dev for engine.\n");
-    goto r_device;
+    goto r_pwm_err;
   }
 
   gpio_sensor_open = gpiod_get(hatch2sr_dev.dev, "openpossensor", GPIOD_IN);
   if (IS_ERR(gpio_sensor_open)) {
     dev_err(hatch2sr_dev.dev, "Cannot get gpio dev for open position sensor.\n");
-    goto r_pwmdev;
+    goto r_openpos_sensor_err;
   }
 
   gpio_sensor_closed = gpiod_get(hatch2sr_dev.dev, "closepossensor", GPIOD_IN);
   if (IS_ERR(gpio_sensor_closed)) {
     dev_err(hatch2sr_dev.dev, "Cannot get gpio dev for closed position sensor.\n");
-    goto r_openposdev;
+    goto r_closedpos_sensor_err;
   }
 
   gpio_relay = gpiod_get(hatch2sr_dev.dev, "relay", GPIOD_OUT_HIGH); //TODO: Should it be out_low?????
   if (IS_ERR(gpio_relay)) {
     dev_err(hatch2sr_dev.dev, "Cannot get gpio dev for relayr.\n");
-    goto r_closedposdev;
+    goto r_relay_err;
   }
 
   if (hatch2sr_init(pwm_dev, gpio_sensor_open, gpio_sensor_closed, gpio_relay)) {
     dev_err(hatch2sr_dev.dev, "Cannot initialize logic for hatch2sr driver.\n");
-    goto r_relaydev;
+    goto r_hatch2sr_init_err;
   }
 
   //Initialize driver logic
@@ -311,19 +311,21 @@ static int hatch2sr_driver_probe(struct platform_device* pdev)
 
   return 0;
 
-  r_relaydev:
+  r_hatch2sr_init_err:
     gpiod_put(gpio_relay);
-  r_closedposdev:
+  r_relay_err:
     gpiod_put(gpio_sensor_closed);
-  r_openposdev:
+  r_closedpos_sensor_err:
     gpiod_put(gpio_sensor_open);
-  r_pwmdev:
+  r_openpos_sensor_err:
     pwm_put(pwm_dev);
-  r_device:
+  r_pwm_err:
+    device_destroy(hatch2sr_dev.dev->class, hatch2sr_dev.num);
+  r_device_err:
     class_destroy(hatch2sr_dev.dev->class);
-  r_class:
+  r_class_err:
     cdev_del(&hatch2sr_dev.cdev);
-  r_cdev:
+  r_cdev_err:
     unregister_chrdev_region(hatch2sr_dev.num, DEV_COUNT);
     return -1;
 }
