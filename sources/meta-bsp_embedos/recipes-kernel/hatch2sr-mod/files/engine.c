@@ -3,8 +3,8 @@
 #include <linux/kernel.h>
 #include <linux/jiffies.h>
 
-#define ENGINE_MIN_SPEED_PCT    (16)
-#define ENGINE_MAX_SPEED_PCT    (100)
+#define ENGINE_MIN_SPEED_PCT    (10)
+#define ENGINE_MAX_SPEED_PCT    (35)
 #define ENGINE_PWM_PERIOD_NS    (10000000)
 #define ENGINE_PWM_INITIAL_DUTY (0)
 
@@ -94,7 +94,7 @@ void engine_perform_slow_start(engine_t* engine)
 
   timer_setup(&engine->timer, engine_handle_timer, 0);
   engine_set_speed_pct(engine, ENGINE_MIN_SPEED_PCT);
-  mod_timer(&engine->timer, jiffies + msecs_to_jiffies(50));
+  mod_timer(&engine->timer, jiffies + msecs_to_jiffies(100));
 }
 
 void engine_set_speed_pct(engine_t* engine, int speed)
@@ -117,8 +117,8 @@ void engine_handle_timer(struct timer_list* timer)
     return;
   }
 
-  engine_set_speed_pct(engine, engine->speed + 2); //increase by 2%
-  mod_timer(&engine->timer, jiffies + msecs_to_jiffies(30));
+  engine_set_speed_pct(engine, engine->speed + 1); //increase by 1%
+  mod_timer(&engine->timer, jiffies + msecs_to_jiffies(150));
 }
 
 /* Helper function defintions */

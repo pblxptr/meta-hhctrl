@@ -14,7 +14,7 @@ int sensor_init(sensor_t* sensor, struct gpio_desc* gpio, irq_handler_t irqhandl
 	gpiod_export(sensor->gpio, false);
 
 	if (request_irq(sensor->irq, irqhandler, IRQF_TRIGGER_FALLING,
-			"hatch2sr.", NULL)) //TODO: Should it be null or func ptr?
+			"hatch2sr", NULL)) //TODO: Should it be null or func ptr?
 	{
     return -1;
 	}
@@ -26,6 +26,7 @@ void sensor_deinit(sensor_t* sensor)
 {
 	free_irq(sensor->irq, NULL);
 	gpiod_unexport(sensor->gpio);
+	gpiod_put(sensor->gpio);
 }
 
 int sensor_get_value(sensor_t* sensor)
