@@ -1,0 +1,1 @@
+cmd_/home/pp/yocto-hh/sources/meta-bsp_embedos/recipes-kernel/hatch2sr-mod/files/modules.order := {   echo /home/pp/yocto-hh/sources/meta-bsp_embedos/recipes-kernel/hatch2sr-mod/files/hatch2sr.ko; :; } | awk '!x[$$0]++' - > /home/pp/yocto-hh/sources/meta-bsp_embedos/recipes-kernel/hatch2sr-mod/files/modules.order

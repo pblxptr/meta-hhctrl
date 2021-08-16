@@ -1,0 +1,1 @@
+cmd_/home/pp/yocto-hh/sources/meta-bsp_embedos/recipes-kernel/hatch2sr-mod/files/Module.symvers := sed 's/ko$$/o/' /home/pp/yocto-hh/sources/meta-bsp_embedos/recipes-kernel/hatch2sr-mod/files/modules.order | scripts/mod/modpost -m -a   -o /home/pp/yocto-hh/sources/meta-bsp_embedos/recipes-kernel/hatch2sr-mod/files/Module.symvers -e -i Module.symvers   -T -
