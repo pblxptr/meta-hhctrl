@@ -24,6 +24,7 @@ extern unsigned long volatile jiffies;
 /* Hatch private functions declarations */
 static irqreturn_t openpos_sensor_isr(int irq, void* dev_id);
 static irqreturn_t closedpos_sensor_isr(int irq, void* dev_id);
+static irqreturn_t handle_sensor_isr(unsigned long* old_jiffies, sensor_t* sensor);
 static bool can_change_position(void);
 static bool is_changing_position(void);
 static bool is_faulty(void);
@@ -141,42 +142,41 @@ bool hatch2sr_engine_get_slow_start(void)
   return engine_get_slow_start(&hatch.engine);
 }
 
-//TODO: Isr have the same body, perhaps but them into single ISR?
 /* Hatch private function declarations */
 irqreturn_t openpos_sensor_isr(int irq, void* dev_id)
 {
-  #ifdef EN_DEBOUNCE
-  static unsigned long old_jiffie = 0;
-  unsigned long diff = jiffies - old_jiffie;
-  if (diff < 100)
-  {
-    return IRQ_HANDLED;
-  }
+  static unsigned long old_jiffies = 0;
 
-  old_jiffie = jiffies;
-  #endif
+  pr_info("Open position sensor isr: %d\n", irq);
 
-  pr_info("Open Sensor isr: %d\n", irq);
-
-  engine_stop(&hatch.engine);
-
-	return IRQ_HANDLED;
+  return handle_sensor_isr(&old_jiffies, &hatch.openpos);
 }
 
 irqreturn_t closedpos_sensor_isr(int irq, void* dev_id)
 {
+  static unsigned long old_jiffies = 0;
+
+  pr_info("Closed position sensor isr: %d\n", irq);
+
+  return handle_sensor_isr(&old_jiffies, &hatch.closedpos);
+}
+
+irqreturn_t handle_sensor_isr(unsigned long* old_jiffies, sensor_t* sensor)
+{
   #ifdef EN_DEBOUNCE
-  static unsigned long old_jiffie = 0;
-  unsigned long diff = jiffies - old_jiffie;
+  unsigned long diff = jiffies - *old_jiffies;
   if (diff < 100)
   {
     return IRQ_HANDLED;
   }
 
-  old_jiffie = jiffies;
+  *old_jiffies = jiffies;
   #endif
 
-  pr_info("Closed Sensor isr: %d\n", irq);
+  if (sensor_get_value(sensor) == SENSOR_VALUE_DEACTIVATED) {
+    pr_info("Sensor deactivated skip isr\n");
+    return IRQ_HANDLED;
+  }
 
   engine_stop(&hatch.engine);
 

@@ -41,9 +41,21 @@ void sensor_deinit(sensor_t* sensor)
   del_timer_sync(&sensor->timer);
 }
 
-int sensor_get_value(sensor_t* sensor)
+sensor_value_t sensor_get_value(sensor_t* sensor)
 {
-  return gpiod_get_value(sensor->gpio);
+  int value;
+
+  if (!sensor->is_active) {
+    return SENSOR_VALUE_DEACTIVATED;
+  }
+
+  value = gpiod_get_value(sensor->gpio);
+
+  if (value) {
+    return SENSOR_VALUE_HIGH;
+  } else{
+    return SENSOR_VALUE_LOW;
+  }
 }
 
 void sensor_deactivate(sensor_t* sensor, int deactivation_time_ms)
