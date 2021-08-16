@@ -14,6 +14,7 @@
 //TODO: Make dependencies null
 
 #define EN_DEBOUNCE
+#define SENSOR_DEACTIVATION_MS 3000
 
 #ifdef EN_DEBOUNCE
 #include <linux/jiffies.h>
@@ -82,6 +83,7 @@ void hatch2sr_open()
 
   relay_set_to_open(&hatch.relay);
   mdelay(300); //TODO: Consider changing mdelay to flag, and run engine in workqueu
+  sensor_deactivate(&hatch.closedpos, SENSOR_DEACTIVATION_MS);
   engine_start(&hatch.engine);
 }
 
@@ -99,6 +101,7 @@ void hatch2sr_close()
 
   relay_set_to_close(&hatch.relay);
   mdelay(300); //TODO: Consider changing mdelay to flag, and run engine in workqueu
+  sensor_deactivate(&hatch.openpos, SENSOR_DEACTIVATION_MS);
   engine_start(&hatch.engine);
 }
 
